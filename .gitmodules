@@ -7,3 +7,6 @@
 [submodule "correlation"]
 	path = correlation
 	url = https://github.com/ccdcoe/frankenSEC
+[submodule "dockerfiles"]
+	path = dockerfiles
+	url = https://github.com/markuskont/dockerfiles
