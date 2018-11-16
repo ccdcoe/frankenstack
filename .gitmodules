@@ -1,3 +1,9 @@
 [submodule "states/win/repo-ng"]
 	path = states/win/repo-ng
 	url = https://github.com/saltstack/salt-winrepo-ng.git
+[submodule "docs"]
+	path = docs
+	url = https://github.com/ccdcoe/Frankencoding.git
+[submodule "correlation"]
+	path = correlation
+	url = https://github.com/ccdcoe/frankenSEC
