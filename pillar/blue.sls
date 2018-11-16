@@ -1,3 +1,8 @@
+hids:
+  sysmon:
+    source: https://download.sysinternals.com/files/Sysmon.zip
+    source_hash: fec68362c2eff86077bd7a2c84cf0b0c0f93d586
+
 metrix:
   config: salt:///blue/metrix/config/telegraf.conf
   windows:

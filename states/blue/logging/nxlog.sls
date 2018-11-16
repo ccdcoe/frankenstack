@@ -1,3 +1,6 @@
+include:
+  - blue.sysmon
+
 nxlog:
   pkg.latest:
     - refresh: True
