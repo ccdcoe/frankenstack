@@ -10,3 +10,6 @@
 [submodule "dockerfiles"]
 	path = dockerfiles
 	url = https://github.com/markuskont/dockerfiles
+[submodule "states/blue/sysmon/swift-config"]
+	path = states/blue/sysmon/swift-config
+	url = https://github.com/SwiftOnSecurity/sysmon-config

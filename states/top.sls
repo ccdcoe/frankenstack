@@ -10,6 +10,7 @@ base:
   'os:Windows':
     - match: grain
     - blue.metrix.win
+    - blue.sysmon
 
   # SERVERS
   'master.yellow.ex':
