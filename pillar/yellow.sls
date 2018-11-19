@@ -1,3 +1,11 @@
+alerta:
+  - name: alerta-blue
+    persist: True
+    port: 8080
+  - name: alerta-yellow
+    persist: True
+    port: 8081
+
 metricserver:
   config:
     influx: salt:///yellow/metrix/config/influxdb.conf 
