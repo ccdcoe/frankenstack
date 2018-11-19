@@ -20,5 +20,6 @@ base:
     - general.docker
 
   'jumbo-*':
-    - yellow.logserver
-    - yellow.metrix
+    - yellow.alerts.alerta
+    - yellow.metrix.tick
+    - yellow.logserver.rsyslog
