@@ -61,4 +61,32 @@ zk.{{params.name}}:
     - watch:
       - file: zk.{{params.name}}.config
 
+kafka.vol.data.{{params.name}}:
+  docker_volume.present:
+    - name: {{params.name}}-kafka-data
+    - require:
+      - service: docker
+
+kafka.{{params.name}}:
+  docker_container.running:
+    - name: {{params.name}}-kafka
+    - hostname: {{params.name}}-kafka
+    # TODO! Move image settings somewhere else
+    - image:  wurstmeister/kafka:latest
+    - log_driver: syslog
+    - log_opt: "tag={{params.name}}-kafka"
+    {% if params.persist %}
+    - restart-policy: always
+    {% else %}
+    - auto_remove: True
+    {% endif %}
+    - binds:
+      - {{params.name}}-kafka-data:/kafka:rw
+    - port_bindings:
+      - {{params.kafka.port}}:9092/tcp
+    - environment: {{params.kafka.env}}
+    - require:
+      - docker_volume: kafka.vol.data.{{params.name}}
+      - docker_container: zk.{{params.name}}
+
 {% endfor %}
