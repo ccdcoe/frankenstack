@@ -1,4 +1,4 @@
-{% if pillar.blockdev.name in grains.disks %}
+{% if 'blockdev' in pillar and pillar.blockdev.name in grains.disks %}
 
 lvm2:
   pkg.installed: []

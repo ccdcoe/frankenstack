@@ -18,6 +18,9 @@ base:
 
   'test-site-*.yellow.ex':
     - general.docker
+    - general.blockdev
+    - yellow.data.kafka
+    - yellow.data.elastic
 
   'jumbo-*':
     - yellow.alerts.alerta

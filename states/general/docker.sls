@@ -27,14 +27,17 @@ docker:
     - pkgs:
       - docker-ce
       - python-docker
+      - python-backports.ssl-match-hostname
   service.running:
     - name: docker
     - enable: True
     {% if 'docker' in pillar %}
     - watch:
       - file: docker.config
+      - pkg: docker
     - require:
       - file: docker.config
+      - pkg: docker
     {% endif %}
 #  pip.installed:
 #    - name: docker
