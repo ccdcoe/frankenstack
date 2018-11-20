@@ -28,6 +28,7 @@ kafka:
       env:
         # REPLACE GRAIN POSITION
         # see salt '*' grains.get ipv4
+        # do not use ip as broker id when deploying multiple clusters on same host
         - KAFKA_BROKER_ID: {{grains.ipv4[1].split('.')[3]}}
         - KAFKA_ADVERTISED_HOST_NAME: {{grains.ipv4[1]}}
         - KAFKA_ADVERTISED_PORT: 9092
