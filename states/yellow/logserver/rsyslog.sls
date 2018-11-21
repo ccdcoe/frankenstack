@@ -30,6 +30,14 @@ logserver.{{params.name}}.{{conf.destname}}:
       params: {{params}}
     - require:
       - file: logserver.{{params.name}}.inc.{{params.host.config}}
+logserver.{{params.name}}.check.config:
+  cmd.run:
+    - name: docker run --rm -v {{params.host.config}}/rsyslog.d:/etc/rsyslog.d --name {{params.name}}-test markuskont/rsyslog:latest -N 1
+    - require:
+      - pkg: docker
+      - docker_container: logserver.{{params.name}}
+    - onchanges:
+      - file: logserver.{{params.name}}.{{conf.destname}}
 {% endfor %}
 
 logserver.vol.{{params.name}}:
@@ -75,14 +83,5 @@ logserver.{{params.name}}:
       {% for conf in params.configs %}
       - file: logserver.{{params.name}}.{{conf.destname}}
       {% endfor %}
-
-logserver.{{params.name}}.check.config:
-  cmd.run:
-    - name: docker run --rm -v {{params.host.config}}/rsyslog.d:/etc/rsyslog.d --name {{params.name}}-test markuskont/rsyslog:latest -N 1
-    - require:
-      - pkg: docker
-      - docker_container: logserver.{{params.name}}
-    - onchanges:
-      - docker_container: logserver.{{params.name}}
 
 {% endfor %}
