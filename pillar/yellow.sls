@@ -58,8 +58,15 @@ logservers:
       rulesets:
         - name: targets-OLD
           hourly: True
-          byhost: True
-          json: True
+          byhost: False
+          json: False
+          kafka:
+            enabled: True
+            topic: testing
+            brokers:
+              - 192.168.0.10:9092
+              - 192.168.0.11:9092
+              - 192.168.0.12:9092
         - name: targets-NEW
           hourly: True
           byhost: True
