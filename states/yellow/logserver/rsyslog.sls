@@ -82,6 +82,7 @@ logserver.{{params.name}}.check.config:
     - require:
       - pkg: docker
       - docker_container: logserver.{{params.name}}
-
+    - onchanges:
+      - docker_container: logserver.{{params.name}}
 
 {% endfor %}
