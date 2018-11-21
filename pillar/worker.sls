@@ -1,3 +1,20 @@
+elastic:
+  - name: elastic-central
+    persist: True
+    version: 
+      ela: 6.5.1
+      kibana: 6.5.1
+    ports:
+      http: 9200
+      kibana: 5601
+    id: {{grains.ipv4[0].split('.')[3]}}
+    network: myoverlay
+    env:
+      - "cluster.name=josephine"
+      - "node.name={{grains.fqdn}}"
+      - "discovery.zen.ping.unicast.hosts=elastic-central-10-ela"
+      - "ES_JAVA_OPTS=-Xms8g -Xmx8g" 
+
 kafka:
   - name: kafka-central
     persist: True
