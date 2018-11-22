@@ -60,9 +60,18 @@ logservers:
           hourly: True
           byhost: False
           json: False
+          elastic:
+            enabled: True
+            indexBase: testing
+            template: syslog-json
+            proxies:
+              - 192.168.0.10:9200
+              - 192.168.0.11:9200
+              - 192.168.0.12:9200
           kafka:
             enabled: True
             topic: testing
+            template: syslog-json
             brokers:
               - 192.168.0.10:9092
               - 192.168.0.11:9092
