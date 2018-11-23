@@ -1,1 +1,3 @@
 elasticsearch
+PyYAML
+jinja2
