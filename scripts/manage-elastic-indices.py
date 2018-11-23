@@ -128,7 +128,7 @@ if __name__ == "__main__":
     parser.add_argument("--pillar",
             dest="pillar",
             default="pillar/worker.sls",
-            help="Location of salt pillar file that specified elasticsearch clusteres and their respective proxy ports")
+            help="Location of salt pillar file that specifies elasticsearch clusters and their respective proxy ports")
 
     parser.add_argument("--show-existing-template",
             dest="showExisting",
@@ -164,7 +164,7 @@ if __name__ == "__main__":
             dest="replicas",
             type=int,
             default=0,
-            help="Set the number of elastic replicas. Applies in template and existing indices can be reconfigured if --update-shard-replicas is used. Can be combined with --update-index-pattern as updating all replicas may cause heavy rebalance IO load.")
+            help="Set the number of elastic replicas. Applies in template and existing indices can be reconfigured if --update-shard-replicas is used. Can be combined with --index-pattern as updating all replicas may cause heavy rebalance IO load.")
 
     parser.add_argument("--index-pattern",
             dest="indexPattern",
@@ -253,6 +253,7 @@ if __name__ == "__main__":
 
         for name, template in templates.items():
             exists = es.indices.exists_template(name) 
+            if exists and args.showExisting: print(es.indices.get_template(name))
 
             if not exists or args.updateTpl: 
                 print("updating template %s" % name )
