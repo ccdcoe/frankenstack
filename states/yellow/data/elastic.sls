@@ -26,13 +26,13 @@ ela.vol.data.{{params.name}}:
 # See commented dockerng states for proper deployment
 ela.{{params.name}}:
   cmd.run:
-    - name: docker run -ti {%if params.persist%} -d {%else%} --rm {%endif%} --name={{params.name}}-{{params.id}}-ela --hostname={{params.name}}-{{params.id}}-ela {%if 'network' in params%}--network={{params.network}}{%endif%} -v {{params.name}}-ela-data:/usr/share/elasticsearch/data:rw -p {{params.ports.http}}:9200/tcp {%for var in params.env%} -e "{{var}}" {%endfor%} --log-driver syslog --log-opt tag="{{params.name}}-{{params.id}}-ela" docker.elastic.co/elasticsearch/elasticsearch-oss:{{params.version.ela}}
+    - name: docker run -ti {%if params.persist%} -d --restart=always {%else%} --rm {%endif%} --name={{params.name}}-{{params.id}}-ela --hostname={{params.name}}-{{params.id}}-ela {%if 'network' in params%}--network={{params.network}}{%endif%} -v {{params.name}}-ela-data:/usr/share/elasticsearch/data:rw -p {{params.ports.http}}:9200/tcp {%for var in params.env%} -e "{{var}}" {%endfor%} --log-driver syslog --log-opt tag="{{params.name}}-{{params.id}}-ela" docker.elastic.co/elasticsearch/elasticsearch-oss:{{params.version.ela}}
     - unless: docker ps | grep "{{params.name}}-{{params.id}}-ela"
     - require: [ docker_volume: ela.vol.data.{{params.name}}, sysctl: ela.fs.max_map_count ]
 
 ela.kibana.{{params.name}}:
   cmd.run:
-    - name: docker run -ti {%if params.persist%} -d {%else%} --rm {%endif%} --name={{params.name}}-{{params.id}}-kibana --hostname={{params.name}}-{{params.id}}-kibana {%if 'network' in params%}--network={{params.network}}{%endif%} -p {{params.ports.kibana}}:5601/tcp -e "SERVER_NAME={{params.name}}-kibana" -e "ELASTICSEARCH_URL=http://{{params.name}}-{{params.id}}-ela:{{params.ports.http}}" --log-driver syslog --log-opt tag="{{params.name}}-{{params.id}}-kibana" docker.elastic.co/kibana/kibana-oss:{{params.version.kibana}}
+    - name: docker run -ti {%if params.persist%} -d --restart=always {%else%} --rm {%endif%} --name={{params.name}}-{{params.id}}-kibana --hostname={{params.name}}-{{params.id}}-kibana {%if 'network' in params%}--network={{params.network}}{%endif%} -p {{params.ports.kibana}}:5601/tcp -e "SERVER_NAME={{params.name}}-kibana" -e "ELASTICSEARCH_URL=http://{{params.name}}-{{params.id}}-ela:9200" --log-driver syslog --log-opt tag="{{params.name}}-{{params.id}}-kibana" docker.elastic.co/kibana/kibana-oss:{{params.version.kibana}}
     - unless: docker ps | grep "{{params.name}}-{{params.id}}-kibana"
     - require: [ cmd: ela.{{params.name}} ]
 
