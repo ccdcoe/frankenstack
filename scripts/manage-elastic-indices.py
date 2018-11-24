@@ -10,7 +10,7 @@ from elasticsearch import Elasticsearch
 from jinja2 import Template, Undefined
 from pprint import pprint
 
-RED     = "\033[1;31m"  
+RED     = "\033[1;31m"
 GREEN   = '\033[1;32m'
 YELLOW  = '\033[1;33m'
 BLUE    = "\033[1;34m"
@@ -79,10 +79,12 @@ DEFAULT_MAPPINGS = {
 }
 
 DEFAULT_TEMPLATE = {
-	"index_patterns": ["*"],
-	"settings": DEFAULT_SETTINGS,
-	"mappings": DEFAULT_MAPPINGS,
-	"aliases": {}
+    "order": 0,
+    "version": 0,
+    "index_patterns": ["*"],
+    "settings": DEFAULT_SETTINGS,
+    "mappings": DEFAULT_MAPPINGS,
+    "aliases": {}
 }
 
 IPV4 = r'^(?:(?:\d{1,3}\.){3}\d{1,3})$'
@@ -193,7 +195,7 @@ if __name__ == "__main__":
 
     with open(args.pillar, 'r') as f:
         tpl = f.read()
-    
+
     tpl = Template(tpl, undefined=NullUndefined)
 
     try:
@@ -201,7 +203,7 @@ if __name__ == "__main__":
     except yaml.YAMLError as e:
         print(e)
         sys.exit(2)
-    
+
     if 'elastic' not in clusters or len(clusters) == 0:
         print("elastic cluster key not defined or missing definitions")
         sys.exit(2)
@@ -257,6 +259,7 @@ if __name__ == "__main__":
 
             if not exists or args.updateTpl: 
                 print("updating template %s" % name )
+                template["version"] += 1
                 resp = es.indices.put_template(name, body=template)
 
                 if args.verb: print(resp)
