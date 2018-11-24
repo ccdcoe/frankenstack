@@ -177,8 +177,7 @@ if __name__ == "__main__":
             dest="refreshInterval",
             type=refreshIntervalArg,
             default=30,
-            help="Refresh interval, or how often elasticsearch does bulk indexing. Higher value is better for throughput, but introduces delay util documents become availeble for searching. Defaults to 30 seconds. More thant 60 seconds is likely unresonable, so tool will not allow higher values."
-            )
+            help="Refresh interval, or how often elasticsearch does bulk indexing. Higher value is better for throughput, but introduces delay util documents become availeble for searching. Defaults to 30 seconds. More thant 60 seconds is likely unresonable, so tool will not allow higher values.")
 
     parser.add_argument("--index-pattern",
             dest="indexPattern",
@@ -272,7 +271,7 @@ if __name__ == "__main__":
 
             if not exists or args.updateTpl: 
                 print("updating template %s" % name )
-                template["version"] += 0 if not exists else old[name]["version"] + 1
+                template["version"] = 0 if not exists else old[name]["version"] + 1
                 resp = es.indices.put_template(name, body=template)
 
                 if args.verb: print(resp)
