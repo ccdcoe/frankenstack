@@ -94,12 +94,18 @@ def regexValidatedIPv4Arg(s, pat=re.compile(IPV4)):
         raise argparse.ArgumentTypeError('Value should be ipv4 address without port suffix')
     return s
 
-def settings(shards=3, repl=0, refr="30s"):
+def refreshIntervalArg(value):
+    ivalue = int(value)
+    if ivalue <= 0 or ivalue >= 60:
+         raise argparse.ArgumentTypeError("refresh_interval should be between 1 and 60 seconds, is %s " % value)
+    return ivalue
+
+def settings(shards=3, repl=0, refr=30):
     return {
         "index": {
             "number_of_shards": shards,
             "number_of_replicas": repl,
-            "refresh_interval": refr
+            "refresh_interval": str(refr) + "s" 
         }
     }
 
@@ -112,7 +118,6 @@ def elaColor(col):
 
 def takeIndexKey(elem):
     return elem["index"]
-
 
 class NullUndefined(Undefined):
     def __getattr__(self, key):
@@ -168,6 +173,13 @@ if __name__ == "__main__":
             default=0,
             help="Set the number of elastic replicas. Applies in template and existing indices can be reconfigured if --update-shard-replicas is used. Can be combined with --index-pattern as updating all replicas may cause heavy rebalance IO load.")
 
+    parser.add_argument("--refresh-interval",
+            dest="refreshInterval",
+            type=refreshIntervalArg,
+            default=30,
+            help="Refresh interval, or how often elasticsearch does bulk indexing. Higher value is better for throughput, but introduces delay util documents become availeble for searching. Defaults to 30 seconds. More thant 60 seconds is likely unresonable, so tool will not allow higher values."
+            )
+
     parser.add_argument("--index-pattern",
             dest="indexPattern",
             default=None,
@@ -209,7 +221,7 @@ if __name__ == "__main__":
         sys.exit(2)
 
     templates = { "default": DEFAULT_TEMPLATE }
-    templates["default"]["settings"] = settings(shards=args.shards, repl=args.replicas)
+    templates["default"]["settings"] = settings(shards=args.shards, repl=args.replicas, refr=args.refreshInterval)
 
     if args.indexPattern: updateExpr = re.compile(args.indexPattern)
 
@@ -255,11 +267,12 @@ if __name__ == "__main__":
 
         for name, template in templates.items():
             exists = es.indices.exists_template(name) 
-            if exists and args.showExisting: print(es.indices.get_template(name))
+            old = es.indices.get_template(name) if exists else None
+            if exists and args.showExisting: print(old)
 
             if not exists or args.updateTpl: 
                 print("updating template %s" % name )
-                template["version"] += 1
+                template["version"] += 0 if not exists else old[name]["version"] + 1
                 resp = es.indices.put_template(name, body=template)
 
                 if args.verb: print(resp)
@@ -273,7 +286,8 @@ if __name__ == "__main__":
                     resp = es.indices.put_settings(
                             {
                                 "index": {
-                                    "number_of_replicas": args.replicas
+                                    "number_of_replicas": args.replicas,
+                                    "refresh_interval": str(args.refreshInterval) + "s"
                                 }
                             }, update)
 
