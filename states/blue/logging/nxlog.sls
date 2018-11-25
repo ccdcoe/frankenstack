@@ -15,3 +15,5 @@ nxlog:
     - enable: True
     - watch:
       - {{pillar.logging.nxlog.deploy}}
+    - require:
+      - {{pillar.logging.nxlog.deploy}}
