@@ -28,3 +28,12 @@ logging:
     template: salt:///blue/logging/nxlog-main.conf
     dir: 'C:\Program Files (x86)\nxlog'
     deploy: 'C:\Program Files (x86)\nxlog\conf\nxlog.conf'
+    channels:
+      - name: Application
+        value: '*' 
+      - name: System
+        value: '*'
+      - name: Security
+        value: '*'
+      - name: Microsoft-Windows-Sysmon/Operational
+        value: '*'
