@@ -37,3 +37,17 @@ logging:
         value: '*'
       - name: Microsoft-Windows-Sysmon/Operational
         value: '*'
+      - name: Microsoft-Windows-PowerShell/Operational
+        value: '*'
+      - name: Microsoft-Windows-NTLM/Operational
+        value: '*'
+      - name: Windows PowerShell
+        value: '*'
+      - name: Microsoft-Windows-Windows Defender/Operational
+        value: '*'
+      - name: Microsoft-Windows-GroupPolicy/Operational
+        value: '*'
+      - name: Microsoft-Windows-Dhcp-Client/Admin
+        value: '*'
+      - name: Microsoft-Windows-DeviceGuard/Operational
+        value: '*'
