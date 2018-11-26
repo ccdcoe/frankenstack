@@ -19,8 +19,12 @@ metrix:
 logging:
   servers:
     - proto: udp
-      host: 192.168.0.100
+      host: 192.168.0.3
+      {% if grains.kernel == "Windows"%}
+      port: 515
+      {% else %}
       port: 514
+      {% endif %}
   rsyslog:
     mainconf: salt:///blue/logging/rsyslog-main.conf
     clientconf: salt:///blue/logging/rsyslog-client.conf
@@ -50,4 +54,6 @@ logging:
       - name: Microsoft-Windows-Dhcp-Client/Admin
         value: '*'
       - name: Microsoft-Windows-DeviceGuard/Operational
+        value: '*'
+      - name: "Microsoft-Windows-Windows Firewall With Advanced Security/Firewall"
         value: '*'
