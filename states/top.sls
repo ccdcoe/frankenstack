@@ -15,10 +15,12 @@ base:
   # SERVERS
   'master.yellow.ex':
     - general.docker
+    - yellow.data.zookeeper
 
   'test-site-*.yellow.ex':
     - general.docker
     - general.blockdev
+    - yellow.data.zookeeper
     - yellow.data.kafka
     - yellow.data.elastic
 
@@ -26,3 +28,4 @@ base:
     - yellow.alerts.alerta
     - yellow.metrix.tick
     - yellow.logserver.rsyslog
+    - yellow.data.zookeeper
