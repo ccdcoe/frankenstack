@@ -1,3 +1,6 @@
 elasticsearch
 PyYAML
 jinja2
+
+kafka-python
+python-snappy
