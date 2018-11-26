@@ -32,3 +32,5 @@ if __name__ == "__main__":
     for i in range(args.count):
         msg = "message %s" % (i)
         resp = producer.send(args.topic, bytes(msg, encoding='utf-8'))
+
+    producer.close()

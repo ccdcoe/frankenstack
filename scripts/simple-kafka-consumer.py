@@ -6,6 +6,12 @@
 import argparse
 from kafka import KafkaConsumer
 
+def positiveInt(value):
+    ivalue = int(value)
+    if ivalue <= 0:
+         raise argparse.ArgumentTypeError("should be > 0, is %s " % value)
+    return ivalue
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
@@ -34,12 +40,18 @@ if __name__ == "__main__":
             default=None,
             help="Kafka topics to consume. Multiple can be defained separated by whitespace.")
 
+    parser.add_argument("--timeout",
+            dest="timeout",
+            type=positiveInt,
+            default=300,
+            help="Automatically close consumer if no events are observed in N seconds. Defaults to 300")
+
     args = parser.parse_args()
 
     consumer = KafkaConsumer(
             bootstrap_servers=args.brokers,
             group_id=args.groupid,
-            consumer_timeout_ms=60*1000)
+            consumer_timeout_ms=args.timeout*1000)
 
     data = {}
     data["topics"] = consumer.topics()
