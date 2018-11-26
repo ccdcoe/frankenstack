@@ -50,48 +50,6 @@ metricserver:
 
 logservers:
   rsyslog:
-    - name: rsyslog-collector-blue
-      persist: True
-      host:
-        config: /opt/rsyslog-config-blue
-        data: /srv/rsyslog-data-blue
-      rulesets:
-        - name: targets-OLD
-          hourly: True
-          byhost: False
-          json: False
-          elastic:
-            enabled: True
-            indexBase: testing
-            template: syslog-json
-            proxies:
-              - 192.168.0.10:9200
-              - 192.168.0.11:9200
-              - 192.168.0.12:9200
-          kafka:
-            enabled: True
-            topic: testing
-            template: syslog-json
-            brokers:
-              - 192.168.0.10:9092
-              - 192.168.0.11:9092
-              - 192.168.0.12:9092
-        - name: targets-NEW
-          hourly: True
-          byhost: True
-          json: True
-      listeners:
-        udp:
-          - port: 514
-            ruleset: targets-OLD
-          - port: 6514
-            ruleset: targets-NEW
-        tcp:
-          - port: 514
-            ruleset: NEW-TCP
-      configs:
-        - frompath: salt:///yellow/logserver/config-rsyslog/001-basic.conf
-          destname: 001-basic.conf
     - name: rsyslog-collector-yellow
       persist: True
       host:
@@ -101,11 +59,35 @@ logservers:
         - name: yellow
           hourly: True
           byhost: True
-          json: True
+          elastic:
+            enabled: True
+            indexBase: yellow
+            proxies:
+              - 192.168.0.10:9200
+          kafka:
+            enabled: True
+            topic: yellow
+            brokers:
+              - 192.168.0.10:9092
+        - name: yellow-win
+          hourly: True
+          byhost: True
+          elastic:
+            enabled: True
+            indexBase: yellow-win
+            proxies:
+              - 192.168.0.10:9200
+          kafka:
+            enabled: True
+            topic: yellow-win
+            brokers:
+              - 192.168.0.10:9092
       listeners:
         udp:
-          - port: 10514
+          - port: 514
             ruleset: yellow
+          - port: 515
+            ruleset: yellow-win
       configs:
-        - frompath: salt:///yellow/logserver/config-rsyslog/001-basic.conf
-          destname: 001-basic.conf
+        - frompath: salt:///yellow/logserver/config-rsyslog/010-rulesets.conf
+          destname: 010-rulesets.conf
