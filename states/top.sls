@@ -3,19 +3,27 @@ base:
   '*':
     - blue.logging
 
-  'os:(Debian|RedHat)':
-    - match: grain_pcre
-    - blue.metrix.linux
+  'kernel:Linux':
+    - match: grain
+    - blue.snoopy
 
-  'os:Windows':
+  'kernel:Windows':
     - match: grain
     - blue.metrix.win
     - blue.sysmon
 
+  'os:(Debian|RedHat)':
+    - match: grain_pcre
+    - blue.metrix.linux
+
   # SERVERS
   'master.yellow.ex':
     - general.docker
-    - yellow.data.zookeeper
+
+  'jumbo-*':
+    - yellow.alerts.alerta
+    - yellow.metrix.tick
+    - yellow.logserver.rsyslog
 
   'test-site-*.yellow.ex':
     - general.docker
@@ -23,9 +31,3 @@ base:
     - yellow.data.zookeeper
     - yellow.data.kafka
     - yellow.data.elastic
-
-  'jumbo-*':
-    - yellow.alerts.alerta
-    - yellow.metrix.tick
-    - yellow.logserver.rsyslog
-    - yellow.data.zookeeper
