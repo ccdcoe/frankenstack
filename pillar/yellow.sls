@@ -59,6 +59,12 @@ logservers:
         - name: yellow
           hourly: True
           byhost: True
+          normalize:
+            - name: snoopy
+              filter: '$programname contains "snoopy"'
+              kafkaTopic: yellow-snoopy
+              elaIndex: yellow-snoopy
+              stop: True
           elastic:
             enabled: True
             indexBase: yellow
@@ -88,6 +94,11 @@ logservers:
             ruleset: yellow
           - port: 515
             ruleset: yellow-win
+      lognorm:
+        - name: stdtypes
+          source: salt:///yellow/logserver/config-rsyslog/stdtypes.rulebase
+        - name: snoopy
+          source: salt:///yellow/logserver/config-rsyslog/snoopy.rulebase
       configs:
         - frompath: salt:///yellow/logserver/config-rsyslog/010-rulesets.conf
           destname: 010-rulesets.conf
