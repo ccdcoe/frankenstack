@@ -38,12 +38,12 @@ kafka:
     config: /opt/kafka-central
     port: 9092
     id: {{grains.ipv4[0].split('.')[3]}}
+    network: central-overlay
     env:
-      - KAFKA_BROKER_ID: {{grains.ipv4[0].split('.')[3]}}
-      - KAFKA_ADVERTISED_PORT: 9092
-      # Second interface is for data network
-      - KAFKA_ADVERTISED_HOST_NAME: {{grains.ipv4[1]}}
-      - KAFKA_LOG_RETENTION_HOURS: 168
-      - KAFKA_ZOOKEEPER_CONNECT: 192.168.0.10:2181,192.168.0.11:2181,192.168.0.12:2181
-      - KAFKA_NUM_PARTITIONS: 1
-      - KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+      - "KAFKA_BROKER_ID={{grains.ipv4[0].split('.')[3]}}"
+      - "KAFKA_ADVERTISED_PORT=9092"
+      - "KAFKA_ADVERTISED_HOST_NAME={{grains.ipv4[1]}}"
+      - "KAFKA_LOG_RETENTION_HOURS=168"
+      - "KAFKA_ZOOKEEPER_CONNECT=zookeeper-central-zk-20,zookeeper-central-zk-21,zookeeper-central-zk-22"
+      - "KAFKA_NUM_PARTITIONS=1"
+      - "KAFKA_DEFAULT_REPLICATION_FACTOR=3"
