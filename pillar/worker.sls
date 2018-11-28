@@ -19,26 +19,18 @@ zookeeper:
   - name: zookeeper-central
     persist: True
     config: /opt/zookeeper-central
-    ports:
+    network: central-overlay
+    id: {{grains.ipv4[0].split('.')[3]}}
+    ports: 
       client: 2181
-      follower: 2888
-      server: 3888
     members:
-      - id: 10
-        addr: 192.168.0.10
-        follower: 2888
-        server: 3888
-      - id: 11
-        addr: 192.168.0.11
-        follower: 2888
-        server: 3888
-      - id: 12
-        addr: 192.168.0.12
-        follower: 2888
-        server: 3888
+      {% for i in range(5)%}
+      - id: 2{{i}}
+        addr: zookeeper-central-zk-2{{i}}
+      {% endfor %}
     env:
-      JVMFLAGS: "-Xmx1g"
-      MYID: {{grains.ipv4[0].split('.')[3]}}
+      - "JVMFLAGS=-Xmx2g"
+      - "MYID={{grains.ipv4[0].split('.')[3]}}"
 
 kafka:
   - name: kafka-central
