@@ -1,5 +1,6 @@
 include:
   - general.python
+  - general.blockdev
 
 {% if grains.oscodename == 'Debian GNU/Linux buster/sid' %}
   {% set oscode = 'buster'%}
@@ -7,14 +8,6 @@ include:
   {% set oscode = grains.oscodename %}
 {% endif %}
 
-{% if 'docker' in pillar %}
-docker.config:
-  file.serialize:
-    - name: /etc/docker/daemon.json
-    - mode: 644
-    - dataset: {{pillar.docker}}
-    - formatter: json
-{% endif %}
 
 docker:
   pkgrepo.managed:
@@ -28,20 +21,26 @@ docker:
       - docker-ce
       - python-docker
       - python-backports.ssl-match-hostname
+      {% if 'blockdev' in pillar and pillar.blockdev.name in grains.disks %}
+      - mount: general.datadir
+      {% endif %}
   service.running:
     - name: docker
     - enable: True
     {% if 'docker' in pillar %}
     - watch:
-      - file: docker.config
+      - file: docker
       - pkg: docker
     - require:
-      - file: docker.config
+      - file: docker
       - pkg: docker
     {% endif %}
-#  pip.installed:
-#    - name: docker
-#    #- bin_env: '/opt/salt/venv/bin/pip'
-#    - require:
-#      - pkg: python-pip
-
+{% if 'docker' in pillar %}
+  file.serialize:
+    - name: /etc/docker/daemon.json
+    - mode: 644
+    - dataset: {{pillar.docker}}
+    - formatter: json
+    - require:
+      - pkg: docker
+{% endif %}

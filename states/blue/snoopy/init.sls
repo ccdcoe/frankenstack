@@ -22,8 +22,8 @@ hids.client.snoopy.install.dir:
 hids.client.snoopy.installer:
   file.managed:
     - name: /var/cache/snoopy/installer.sh
-    - source: {{pillar.snoopy.source}}
-    - source_hash: {{pillar.snoopy.source_hash}}
+    - source: {{pillar.hids.snoopy.source}}
+    - source_hash: {{pillar.hids.snoopy.source_hash}}
     - require:
       - file: hids.client.snoopy.install.dir
 
