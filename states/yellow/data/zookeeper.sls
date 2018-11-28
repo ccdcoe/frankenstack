@@ -31,34 +31,12 @@ zk.vol.wal.{{params.name}}:
       - service: docker
 
 zk.{{params.name}}:
-  docker_container.running:
-    - name: {{params.name}}-zk-{{params.env.MYID}}
-    - hostname: {{params.name}}-zk-{{params.env.MYID}}
-    # TODO! Move image settings somewhere else
-    - image:  elevy/zookeeper:latest
-    - log_driver: syslog
-    - log_opt: "tag={{params.name}}-zk-{{params.env.MYID}}"
-    {% if params.persist %}
-    - restart-policy: always
-    {% else %}
-    - auto_remove: True
-    {% endif %}
-    - binds:
-      - {{params.name}}-zk-data:/zookeeper/data:rw
-      - {{params.name}}-zk-wal:/zookeeper/wal:rw
-      - {{params.config}}/zoo.cfg:/zookeeper/conf/zoo.cfg:ro
-    - port_bindings:
-      - {{params.ports.client}}:2181/tcp
-      - {{params.ports.follower}}:2888/tcp
-      - {{params.ports.server}}:3888/tcp
-    - environment:
-      - JVMFLAGS: {{params.env.JVMFLAGS}}
-      - MYID: {{params.env.MYID}}
+  cmd.run:
+    - name: docker run -ti {%if params.persist%} -d --restart=always {%else%} --rm {%endif%} --name={{params.name}}-zk-{{params.id}} --hostname={{params.name}}-zk-{{params.id}} {%if 'network' in params%} --network={{params.network}}{%endif%} -v {{params.name}}-zk-data:/zookeeper/data:rw -v {{params.name}}-zk-wal:/zookeeper/wal:rw -v {{params.config}}/zoo.cfg:/zookeeper/conf/zoo.cfg:ro -p {{params.ports.client}}:2181/tcp {%for var in params.env%} -e "{{var}}" {%endfor%} --log-driver syslog --log-opt tag="{{params.name}}-zk-{{params.id}}" elevy/zookeeper:latest
+    - unless: docker ps | grep "{{params.name}}-zk-{{params.id}}"
     - require:
+      - file: zk.{{params.name}}.config
       - docker_volume: zk.vol.data.{{params.name}}
       - docker_volume: zk.vol.wal.{{params.name}}
-      - file: zk.{{params.name}}.config
-    - watch:
-      - file: zk.{{params.name}}.config
 
 {% endfor %}

@@ -25,3 +25,9 @@ sudo docker network create -d overlay --attachable myoverlay
 ```
 
 Note that cluster rebalance operations can be quite network-io intensive and we have not benchmarked this with large elastic or kafka deployments. Furthermore, salt dockerng state module had issues in our lab whereby containers were disconnected from network on second highstate runs. Expect state hacks to work around this issue.
+
+### Verify that zookeeper cluster is up and running
+
+```
+for i in $(seq 20 24); do echo stats | nc 192.168.0.$i 2181 | egrep "Node count|Mode" ; done
+```
