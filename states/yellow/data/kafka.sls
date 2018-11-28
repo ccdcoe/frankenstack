@@ -15,23 +15,9 @@ kafka.vol.data.{{params.name}}:
       - service: docker
 
 kafka.{{params.name}}:
-  docker_container.running:
-    - name: {{params.name}}-kafka-{{params.id}}
-    - hostname: {{params.name}}-kafka-{{params.id}}
-    # TODO! Move image settings somewhere else
-    - image:  wurstmeister/kafka:latest
-    - log_driver: syslog
-    - log_opt: "tag={{params.name}}-kafka-{{params.id}}"
-    {% if params.persist %}
-    - restart-policy: always
-    {% else %}
-    - auto_remove: True
-    {% endif %}
-    - binds:
-      - {{params.name}}-kafka-data:/kafka:rw
-    - port_bindings:
-      - {{params.port}}:9092/tcp
-    - environment: {{params.env}}
+  cmd.run:
+    - name: docker run -ti {%if params.persist%} -d --restart=always {%else%} --rm {%endif%} --name={{params.name}}-kafka-{{params.id}} --hostname={{params.name}}-kafka-{{params.id}} {%if 'network' in params%} --network={{params.network}}{%endif%} -v {{params.name}}-kafka-data:/kafka:rw -p {{params.port}}:9092/tcp {%for var in params.env%} -e "{{var}}" {%endfor%} --log-driver syslog --log-opt tag="{{params.name}}-kafka-{{params.id}}"  wurstmeister/kafka:latest
+    - unless: docker ps | grep "{{params.name}}-kafka-{{params.id}}"
     - require:
       - docker_volume: kafka.vol.data.{{params.name}}
 

@@ -20,14 +20,18 @@ base:
   'master.yellow.ex':
     - general.docker
 
-  'jumbo-*':
+  'jumbo-*.yellow.ex':
     - yellow.alerts.alerta
     - yellow.metrix.tick
     - yellow.logserver.rsyslog
 
+  'broker-*.yellow.ex':
+    - general.blockdev
+    - general.docker
+    - yellow.data.zookeeper
+    - yellow.data.kafka
+
   'test-site-*.yellow.ex':
     - general.docker
     - general.blockdev
-    - yellow.data.zookeeper
-    - yellow.data.kafka
     - yellow.data.elastic
