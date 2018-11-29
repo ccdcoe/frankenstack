@@ -9,8 +9,8 @@ hids:
 metrix:
   config: salt:///blue/metrix/config/telegraf.conf
   windows:
-    source: https://dl.influxdata.com/telegraf/releases/telegraf-1.8.3_windows_amd64.zip
-    hash: b779d2413371587bfa9f53acf62a7f55aeb516ce415a14f8f03909b5b49b7744
+    source: https://dl.influxdata.com/telegraf/releases/telegraf-1.9.0_windows_amd64.zip
+    hash: b2444671ea0f31b85f443fcb81f8512632c0939ba682dffb4f6b7a102a217ab1
   winhash:
   hostname: {{grains.fqdn}}
   influx:
