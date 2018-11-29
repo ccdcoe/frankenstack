@@ -12,11 +12,11 @@ rsyslog:
     - enable: True
     - require:
       - file: /etc/rsyslog.conf
-      - file: /etc/rsyslog.d/50-remote.conf
+      - file: /etc/rsyslog.d/50-local.conf
       - file: /etc/rsyslog.d/60-remote.conf
     - watch:
       - file: /etc/rsyslog.conf
-      - file: /etc/rsyslog.d/50-remote.conf
+      - file: /etc/rsyslog.d/50-local.conf
       - file: /etc/rsyslog.d/60-remote.conf
 
 /etc/rsyslog.conf:
