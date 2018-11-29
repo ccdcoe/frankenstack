@@ -12,7 +12,7 @@ metrix.client.tick.telegraf.installer:
 
 metrix.client.tick.telegraf.binary:
   archive.extracted:
-    - name: 'C:\Program Files\Telegraf\telegraf.exe'
+    - name: 'C:\Program Files\Telegraf\'
     - source: 'C:\Program Files\Telegraf\telegraf.zip'
     - overwrite: True
     - onchanges:
