@@ -2,14 +2,15 @@ hids:
   sysmon:
     source: https://download.sysinternals.com/files/Sysmon.zip
     source_hash: fec68362c2eff86077bd7a2c84cf0b0c0f93d586
+  snoopy:
+    source: https://github.com/a2o/snoopy/raw/install/doc/install/bin/snoopy-install.sh
+    source_hash: 428069bd7858e626a2dea50ed87b2d5bcfa4a411
 
 metrix:
   config: salt:///blue/metrix/config/telegraf.conf
   windows:
     source: https://dl.influxdata.com/telegraf/releases/telegraf-1.8.3_windows_amd64.zip
     hash: b779d2413371587bfa9f53acf62a7f55aeb516ce415a14f8f03909b5b49b7744
-    #source: https://dl.influxdata.com/telegraf/releases/telegraf-1.9.0~rc2_windows_amd64.zip
-    #hash: e6f2cd81f4b44e45d9040304226141cb366724b6d7071b60b820b01840acb9ad
   winhash:
   hostname: {{grains.fqdn}}
   influx:
@@ -26,12 +27,18 @@ logging:
       port: 514
       {% endif %}
   rsyslog:
-    mainconf: salt:///blue/logging/rsyslog-main.conf
-    clientconf: salt:///blue/logging/rsyslog-client.conf
+    mainconf: salt:///blue/logging/config/rsyslog-main.conf
+    clientconf: salt:///blue/logging/config/rsyslog-client.conf
+    localconf: salt:///blue/logging/config/rsyslog-local.conf
   nxlog:
     template: salt:///blue/logging/nxlog-main.conf
+    {% if grains.cpuarch == "x86" and grains.osrelease == "7" %}
+    dir: 'C:\Program Files\nxlog'
+    deploy: 'C:\Program Files\nxlog\conf\nxlog.conf'
+    {% else %}
     dir: 'C:\Program Files (x86)\nxlog'
     deploy: 'C:\Program Files (x86)\nxlog\conf\nxlog.conf'
+    {% endif %}
     channels:
       - name: Application
         value: '*' 
