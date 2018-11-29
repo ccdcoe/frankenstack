@@ -1,3 +1,4 @@
+{% if grains.cpuarch == "AMD64" %}
 metrix.client.tick.telegraf.dir:
   file.directory:
     - name: 'C:\Program Files\Telegraf'
@@ -60,3 +61,4 @@ metrix.client.tick.telegraf:
     - defaults:
       outputs: {{pillar.metrix.influx}}
       hostname: {{pillar.metrix.hostname}}
+{% endif %}
