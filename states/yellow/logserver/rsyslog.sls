@@ -45,7 +45,7 @@ logserver.{{params.name}}.{{conf.destname}}:
 
 logserver.{{params.name}}.check.config:
   cmd.run:
-    - name: docker run --rm -v {{params.host.config}}/rsyslog.d:/etc/rsyslog.d --name {{params.name}}-test markuskont/rsyslog:latest -N 1
+    - name: docker run --rm -v {{params.host.config}}/rsyslog.d:/etc/rsyslog.d -v {{params.host.config}}/lognorm:/etc/lognorm --name {{params.name}}-test markuskont/rsyslog:latest -N 1
     - require:
       - pkg: docker
       - docker_container: logserver.{{params.name}}

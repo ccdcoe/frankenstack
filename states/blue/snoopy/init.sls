@@ -29,7 +29,7 @@ hids.client.snoopy.installer:
 
 hids.client.snoopy.install:
   cmd.run:
-    - name: bash -c /var/cache/snoopy/installer.sh stable
+    - name: bash /var/cache/snoopy/installer.sh stable
     - cwd: /var/cache/snoopy
     - onchanges:
       - file: hids.client.snoopy.installer
