@@ -3,7 +3,7 @@ hids.client.snoopy.config:
     - name: /etc/snoopy.ini
     - source: salt:///blue/snoopy/config/config.ini
 
-{% if (grains.os == 'Debian' and grains.osrelease == 'testing') or (grains.os == 'Ubuntu' and osmajorrelease >= 18) %}
+{% if grains.oscodename == 'buster' or grains.oscodename == 'bionic' %}
 
 hids.client.snoopy.install:
   pkg.latest:
