@@ -12,9 +12,11 @@ rsyslog:
     - enable: True
     - require:
       - file: /etc/rsyslog.conf
+      - file: /etc/rsyslog.d/50-remote.conf
       - file: /etc/rsyslog.d/60-remote.conf
     - watch:
       - file: /etc/rsyslog.conf
+      - file: /etc/rsyslog.d/50-remote.conf
       - file: /etc/rsyslog.d/60-remote.conf
 
 /etc/rsyslog.conf:
@@ -23,6 +25,11 @@ rsyslog:
     - mode: 640
     - require:
       - pkg: rsyslog
+
+/etc/rsyslog.d/50-local.conf:
+  file.managed:
+    - source: {{pillar.logging.rsyslog.localconf}}
+    - mode: 640
 
 /etc/rsyslog.d/60-remote.conf:
   file.managed:
@@ -33,4 +40,3 @@ rsyslog:
       servers: {{pillar.logging.servers}}
     - require:
       - pkg: rsyslog
-
