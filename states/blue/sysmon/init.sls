@@ -32,7 +32,11 @@ hids.client.sysmon.config:
 
 hids.client.sysmon.install:
   cmd.run:
+    {% if grains.cpuarch == "AMD64"%}
     - name: '"C:\Program Files\sysmon\Sysmon64.exe" -i "C:\Program Files\sysmon\config.xml" -accepteula'
+    {% else %}
+    - name: '"C:\Program Files\sysmon\Sysmon.exe" -i "C:\Program Files\sysmon\config.xml" -accepteula'
+    {% endif %}
     - unless: 'C:\windows\system32\cmd.exe /c sc.exe query Sysmon64'
     - require:
       - archive: hids.client.sysmon.binary
