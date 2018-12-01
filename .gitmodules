@@ -13,3 +13,6 @@
 [submodule "states/blue/sysmon/swift-config"]
 	path = states/blue/sysmon/swift-config
 	url = https://github.com/SwiftOnSecurity/sysmon-config
+[submodule "peek"]
+	path = peek
+	url = https://github.com/ccdcoe/go-peek.git
