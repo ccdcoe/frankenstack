@@ -2,7 +2,7 @@ include:
   - general.blockdev
   - general.docker
 
-{% for params in pillar.logservers.rsyslog %}
+{% set params = pillar.logserver %}
 
 logserver.{{params.name}}.{{params.host.config}}:
   file.directory:
@@ -67,7 +67,9 @@ logserver.vol.{{params.name}}:
 logserver.{{params.name}}:
   docker_container.running:
     - name: {{params.name}}
+    {% if not 'network' in params %}
     - hostname: {{params.name}}
+    {% endif %}
     # TODO! Use a more official image
     - image: markuskont/rsyslog:latest
     - log_driver: syslog
@@ -76,6 +78,9 @@ logserver.{{params.name}}:
     - restart-policy: always
     {% else %}
     - auto_remove: True
+    {% endif %}
+    {% if 'network' in params and params.network == 'host'%}
+    - network_mode: host
     {% endif %}
     - port_bindings:
       {% if 'tcp' in params.listeners %}
@@ -115,5 +120,3 @@ logserver.{{params.name}}:
       - file: logserver.{{params.name}}.norm.{{norm.name}}
       {% endfor %}
       {% endif %}
-
-{% endfor %}
