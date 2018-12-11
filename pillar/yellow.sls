@@ -49,56 +49,84 @@ metricserver:
         port: 8889
 
 logservers:
-  rsyslog:
-    - name: rsyslog-collector-yellow
-      persist: True
-      host:
-        config: /opt/rsyslog-config-yellow/
-        data: /srv/rsyslog-data-yellow
-      rulesets:
-        - name: yellow
-          hourly: True
-          byhost: True
-          normalize:
-            - name: snoopy
-              filter: '$programname contains "snoopy"'
-              kafkaTopic: yellow-snoopy
-              elaIndex: yellow-snoopy
-              stop: True
-          elastic:
-            enabled: True
-            indexBase: yellow
-            proxies:
-              - 192.168.0.10:9200
-          kafka:
-            enabled: True
-            topic: yellow
-            brokers:
-              - 192.168.0.10:9092
-        - name: yellow-win
-          hourly: True
-          byhost: True
-          elastic:
-            enabled: True
-            indexBase: yellow-win
-            proxies:
-              - 192.168.0.10:9200
-          kafka:
-            enabled: True
-            topic: yellow-win
-            brokers:
-              - 192.168.0.10:9092
-      listeners:
-        udp:
-          - port: 514
-            ruleset: yellow
-          - port: 515
-            ruleset: yellow-win
-      lognorm:
-        - name: stdtypes
-          source: salt:///yellow/logserver/config-rsyslog/stdtypes.rulebase
+  name: rsyslog-collector-blue
+  persist: True
+  host:
+    config: /opt/rsyslog-config-blue
+    data: /srv/rsyslog-data-blue
+  network: host
+  rulesets:
+    - name: linux
+      hourly: False
+      byhost: True
+      normalize:
         - name: snoopy
-          source: salt:///yellow/logserver/config-rsyslog/snoopy.rulebase
-      configs:
-        - frompath: salt:///yellow/logserver/config-rsyslog/010-rulesets.conf
-          destname: 010-rulesets.conf
+          filter: '$programname contains "snoopy"'
+          kafkaTopic: linux-snoopy
+          elaIndex: linux-snoopy
+          stop: True
+      elastic:
+        enabled: True
+        indexBase: linux
+        proxies:
+          {% for i in range(10,12) %}
+          - 192.168.0.{{i}}:9200
+          {% endfor %}
+      kafka:
+        enabled: True
+        topic: linux
+        brokers:
+          {% for i in range(20,24) %}
+          - 192.168.0.{{i}}:9092
+          {% endfor %}
+    - name: windows
+      hourly: False
+      byhost: True
+      elastic:
+        enabled: True
+        indexBase: windows
+        proxies:
+          {% for i in range(10,12) %}
+          - 192.168.0.{{i}}:9200
+          {% endfor %}
+      kafka:
+        enabled: True
+        topic: windows
+        brokers:
+          {% for i in range(20,24) %}
+          - 192.168.0.{{i}}:9092
+          {% endfor %}
+    - name: suricata
+      hourly: True
+      byhost: False
+      elastic:
+        enabled: True
+        indexBase: suricata
+        proxies:
+          {% for i in range(10,12) %}
+          - 192.168.0.{{i}}:9200
+          {% endfor %}
+      kafka:
+        enabled: True
+        topic: suricata
+        brokers:
+          {% for i in range(20,24) %}
+          - 192.168.0.{{i}}:9092
+          {% endfor %}
+  listeners:
+    udp:
+      - port: 514
+        ruleset: linux
+      - port: 515
+        ruleset: windows
+      - port: 1514
+        ruleset: suricata
+  lognorm:
+    - name: stdtypes
+      source: salt:///yellow/logserver/config-rsyslog/stdtypes.rulebase
+    - name: snoopy
+      source: salt:///yellow/logserver/config-rsyslog/snoopy.rulebase
+  configs:
+    - frompath: salt:///yellow/logserver/config-rsyslog/010-rulesets.conf
+      destname: 010-rulesets.conf
+
