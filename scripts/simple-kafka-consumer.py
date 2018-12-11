@@ -4,6 +4,7 @@
 # Mainly for testing and reference when implementing custom consumers
 
 import argparse
+import json
 from kafka import KafkaConsumer
 
 def positiveInt(value):
@@ -40,6 +41,18 @@ if __name__ == "__main__":
             default=None,
             help="Kafka topics to consume. Multiple can be defained separated by whitespace.")
 
+    parser.add_argument("--beginning",
+            dest="beginning",
+            action="store_true",
+            default=False,
+            help="Consume messages from first available messages in topic. By default, tail from end.")
+
+    parser.add_argument("--no-commit-offsets",
+            dest="disableOffsetCommit",
+            action="store_true",
+            default=False,
+            help="Disable offset commit. Consumed message offsets would not be stored under consumer group. Defaults to false."
+            )
     parser.add_argument("--timeout",
             dest="timeout",
             type=positiveInt,
@@ -48,9 +61,13 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    offset = "earliest" if args.beginning else "latest"
+    commit = False if args.disableOffsetCommit else True
     consumer = KafkaConsumer(
             bootstrap_servers=args.brokers,
             group_id=args.groupid,
+            auto_offset_reset=offset,
+            enable_auto_commit=commit,
             consumer_timeout_ms=args.timeout*1000)
 
     data = {}
@@ -65,9 +82,15 @@ if __name__ == "__main__":
         data["consumed"] = 0
         try:
             for msg in consumer:
-                print(msg)
+                d = json.loads(msg.value.decode("utf-8"))
+                d["kafka"] = {}
+                d["kafka"]["timestamp"] = msg.timestamp
+                d["kafka"]["partition"] = msg.partition
+                d["kafka"]["offset"] = msg.offset
+                d["kafka"]["key"] = msg.key.decode("utf-8") if msg.key else None
+                print(json.dumps(d))
                 data["consumed"] += 1
         except KeyboardInterrupt as e:
                 consumer.close(autocommit=False)
 
-    print(data)
+    print(data) if args.noConsume else print("Consumed:", data["consumed"], "messages")
