@@ -53,6 +53,13 @@ if __name__ == "__main__":
             default=False,
             help="Disable offset commit. Consumed message offsets would not be stored under consumer group. Defaults to false."
             )
+
+    parser.add_argument("--consume-key",
+            dest="consumeKey",
+            default=None,
+            help="Only return messages where kafka key equals value. By default, all messages will be returned."
+            )
+
     parser.add_argument("--timeout",
             dest="timeout",
             type=positiveInt,
@@ -82,14 +89,18 @@ if __name__ == "__main__":
         data["consumed"] = 0
         try:
             for msg in consumer:
-                d = json.loads(msg.value.decode("utf-8"))
-                d["kafka"] = {}
-                d["kafka"]["timestamp"] = msg.timestamp
-                d["kafka"]["partition"] = msg.partition
-                d["kafka"]["offset"] = msg.offset
-                d["kafka"]["key"] = msg.key.decode("utf-8") if msg.key else None
-                print(json.dumps(d))
-                data["consumed"] += 1
+                key = msg.key.decode("utf-8") if msg.key else None
+                process = True if (key and args.consumeKey and args.consumeKey == key) or (not args.consumeKey) else False
+                if process:
+                    d = json.loads(msg.value.decode("utf-8"))
+                    d["kafka"] = {}
+                    d["kafka"]["timestamp"] = msg.timestamp
+                    d["kafka"]["partition"] = msg.partition
+                    d["kafka"]["offset"] = msg.offset
+                    d["kafka"]["key"] = key
+                    print(json.dumps(d))
+                    data["consumed"] += 1
+
         except KeyboardInterrupt as e:
                 consumer.close(autocommit=False)
 
