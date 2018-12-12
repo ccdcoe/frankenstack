@@ -59,6 +59,7 @@ logservers:
     - name: linux
       hourly: False
       byhost: True
+      bySrcIP: True
       normalize:
         - name: snoopy
           filter: '$programname contains "snoopy"'
@@ -82,6 +83,12 @@ logservers:
     - name: windows
       hourly: False
       byhost: True
+      bySrcIP: True
+      sort:
+        - name: sysmon
+          filter: '$programname contains "Sysmon"'
+          kafkaTopic: windows-sysmon
+          elaIndex: windows-sysmon
       elastic:
         enabled: True
         indexBase: windows
@@ -99,6 +106,7 @@ logservers:
     - name: suricata
       hourly: True
       byhost: False
+      bySrcIP: False
       elastic:
         enabled: True
         indexBase: suricata
