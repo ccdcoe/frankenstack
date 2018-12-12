@@ -135,9 +135,15 @@ if __name__ == "__main__":
             type=regexValidatedIPv4Arg,
             help="IPv4 address of elastic proxy host. Without port suffix.")
 
+    parser.add_argument("--port",
+            dest="port",
+            type=int,
+            default=None,
+            help="Default port")
+
     parser.add_argument("--pillar",
             dest="pillar",
-            default="pillar/worker.sls",
+            default=None,
             help="Location of salt pillar file that specifies elasticsearch clusters and their respective proxy ports")
 
     parser.add_argument("--show-existing-template",
@@ -157,6 +163,11 @@ if __name__ == "__main__":
             action="store_true",
             default=False,
             help="Should template be updated if it already exists")
+
+    parser.add_argument("--template-pattern",
+            dest="tplPattern",
+            default="logs-*",
+            help="Default template pattern will only be applied on indices with defined prefix. Defaults to logs-*. Not to fight with moloch db.pl")
 
     parser.add_argument("--update-replicas",
             dest="updateRepl",
@@ -207,23 +218,41 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    with open(args.pillar, 'r') as f:
-        tpl = f.read()
-
-    tpl = Template(tpl, undefined=NullUndefined)
-
-    try:
-        clusters = yaml.safe_load(tpl.render())
-    except yaml.YAMLError as e:
-        print(e)
+    if not args.pillar and not args.port:
+        print("Pillar location or proxy port must be defined")
         sys.exit(2)
 
-    if 'elastic' not in clusters or len(clusters) == 0:
-        print("elastic cluster key not defined or missing definitions")
+    if args.pillar and args.port:
+        print("Pillar location and proxy port are mutually exclusive, pick one")
+
+    if args.pillar:
+        with open(args.pillar, 'r') as f:
+            tpl = f.read()
+
+        tpl = Template(tpl, undefined=NullUndefined)
+
+        try:
+            clusters = yaml.safe_load(tpl.render())
+        except yaml.YAMLError as e:
+            print(e)
+            sys.exit(2)
+
+        if 'elastic' not in clusters or len(clusters) == 0:
+            print("elastic cluster key not defined or missing definitions")
+            sys.exit(2)
+
+    elif args.port:
+        clusters = []
+        clusters.append({"ports": {"http": args.port} })
+        clusters = {"elastic": clusters}
+
+    else:
+        print("Nope")
         sys.exit(2)
 
     templates = { "default": DEFAULT_TEMPLATE }
     templates["default"]["settings"] = settings(shards=args.shards, repl=args.replicas, refr=args.refreshInterval)
+    templates["default"]["index_patterns"][0] = args.tplPattern
 
     if args.indexPattern: updateExpr = re.compile(args.indexPattern)
 
