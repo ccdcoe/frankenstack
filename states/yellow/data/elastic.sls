@@ -24,17 +24,33 @@ ela.vol.data.{{params.name}}:
 
 # NOTE! This is a hack to work around dockerng state issue in our environment
 # See commented dockerng states for proper deployment
+{% set elaName = [params.name, params.id|string, "ela"]|join("-")%}
 ela.{{params.name}}:
   cmd.run:
-    - name: docker run -ti {%if params.persist%} -d --restart=always {%else%} --rm {%endif%} --name={{params.name}}-{{params.id}}-ela --hostname={{params.name}}-{{params.id}}-ela {%if 'network' in params%}--network={{params.network}}{%endif%} -v {{params.name}}-ela-data:/usr/share/elasticsearch/data:rw -p {{params.ports.http}}:9200/tcp {%for var in params.env%} -e "{{var}}" {%endfor%} --log-driver syslog --log-opt tag="{{params.name}}-{{params.id}}-ela" docker.elastic.co/elasticsearch/elasticsearch-oss:{{params.version.ela}}
-    - unless: docker ps | grep "{{params.name}}-{{params.id}}-ela"
+    - name: docker run -ti {%if params.persist%} -d --restart=always {%else%} --rm {%endif%} --name={{elaName}} --hostname={{elaName}} {%if 'network' in params%}--network={{params.network}}{%endif%} -v {{params.name}}-ela-data:/usr/share/elasticsearch/data:rw -p {{params.ports.http}}:9200/tcp {%for var in params.env%} -e "{{var}}" {%endfor%} --log-driver syslog --log-opt tag="{{elaName}}" docker.elastic.co/elasticsearch/elasticsearch-oss:{{params.version.ela}}
+    - unless: docker ps -a | grep "{{elaName}}"
     - require: [ docker_volume: ela.vol.data.{{params.name}}, sysctl: ela.fs.max_map_count ]
 
+ela.start.{{params.name}}:
+  cmd.run:
+    - name: docker container start {{elaName}}
+    - onlyif: docker ps --filter "status=exited" | grep {{elaName}}
+    - require: 
+      - cmd: ela.{{params.name}}
+
+{% set kibanaName = [params.name, params.id|string, "kibana"]|join("-")%}
 ela.kibana.{{params.name}}:
   cmd.run:
-    - name: docker run -ti {%if params.persist%} -d --restart=always {%else%} --rm {%endif%} --name={{params.name}}-{{params.id}}-kibana --hostname={{params.name}}-{{params.id}}-kibana {%if 'network' in params%}--network={{params.network}}{%endif%} -p {{params.ports.kibana}}:5601/tcp -e "SERVER_NAME={{params.name}}-kibana" -e "ELASTICSEARCH_URL=http://{{params.name}}-{{params.id}}-ela:9200" --log-driver syslog --log-opt tag="{{params.name}}-{{params.id}}-kibana" docker.elastic.co/kibana/kibana-oss:{{params.version.kibana}}
-    - unless: docker ps | grep "{{params.name}}-{{params.id}}-kibana"
+    - name: docker run -ti {%if params.persist%} -d --restart=always {%else%} --rm {%endif%} --name={{kibanaName}} --hostname={{kibanaName}} {%if 'network' in params%}--network={{params.network}}{%endif%} -p {{params.ports.kibana}}:5601/tcp -e "SERVER_NAME={{kibanaName}}" -e "ELASTICSEARCH_URL=http://{{elaName}}:9200" --log-driver syslog --log-opt tag="{{kibanaName}}" docker.elastic.co/kibana/kibana-oss:{{params.version.kibana}}
+    - unless: docker ps -a | grep "{{kibanaName}}"
     - require: [ cmd: ela.{{params.name}} ]
+
+ela.kibana.start.{{params.name}}:
+  cmd.run:
+    - name: docker container start {{kibanaName}}
+    - onlyif: docker ps --filter "status=exited" | grep {{kibanaName}}
+    - require: 
+      - cmd: ela.kibana.{{params.name}}
 
 #ela.{{params.name}}:
 #  docker_container.running:
