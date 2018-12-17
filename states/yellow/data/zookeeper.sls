@@ -30,13 +30,21 @@ zk.vol.wal.{{params.name}}:
     - require:
       - service: docker
 
+{% set zooName = [params.name, "zk", params.id|string]|join("-")%}
 zk.{{params.name}}:
   cmd.run:
-    - name: docker run -ti {%if params.persist%} -d --restart=always {%else%} --rm {%endif%} --name={{params.name}}-zk-{{params.id}} --hostname={{params.name}}-zk-{{params.id}} {%if 'network' in params%} --network={{params.network}}{%endif%} -v {{params.name}}-zk-data:/zookeeper/data:rw -v {{params.name}}-zk-wal:/zookeeper/wal:rw -v {{params.config}}/zoo.cfg:/zookeeper/conf/zoo.cfg:ro -p {{params.ports.client}}:2181/tcp {%for var in params.env%} -e "{{var}}" {%endfor%} --log-driver syslog --log-opt tag="{{params.name}}-zk-{{params.id}}" elevy/zookeeper:latest
-    - unless: docker ps | grep "{{params.name}}-zk-{{params.id}}"
+    - name: docker run -ti {%if params.persist%} -d --restart=always {%else%} --rm {%endif%} --name={{zooName}} --hostname={{zooName}} {%if 'network' in params%} --network={{params.network}}{%endif%} -v {{params.name}}-zk-data:/zookeeper/data:rw -v {{params.name}}-zk-wal:/zookeeper/wal:rw -v {{params.config}}/zoo.cfg:/zookeeper/conf/zoo.cfg:ro -p {{params.ports.client}}:2181/tcp {%for var in params.env%} -e "{{var}}" {%endfor%} --log-driver syslog --log-opt tag="{{zooName}}" elevy/zookeeper:latest
+    - unless: docker ps | grep "{{zooName}}"
     - require:
       - file: zk.{{params.name}}.config
       - docker_volume: zk.vol.data.{{params.name}}
       - docker_volume: zk.vol.wal.{{params.name}}
+
+zk.start.{{params.name}}:
+  cmd.run:
+    - name: docker container start {{zooName}}
+    - onlyif: docker ps --filter "status=exited" | grep {{zooName}}
+    - require:
+      - cmd: zk.{{params.name}}
 
 {% endfor %}
