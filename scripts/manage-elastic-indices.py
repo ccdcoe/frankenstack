@@ -73,10 +73,6 @@ DEFAULT_MAPPINGS = {
                 }
             }
         ],
-        "_all": {
-            "norms": False,
-            "enabled": False
-        },
         "properties": DEFAULT_PROPERTIES
     }
 }
