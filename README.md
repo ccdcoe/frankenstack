@@ -31,3 +31,9 @@ Note that cluster rebalance operations can be quite network-io intensive and we 
 ```
 for i in $(seq 20 24); do echo stats | nc 192.168.0.$i 2181 | egrep "Node count|Mode" ; done
 ```
+
+### Verify that kafka brokers are alive
+
+```
+echo dump | nc <zk-host> 2181 | grep brokers
+```
