@@ -7,6 +7,12 @@ import argparse
 import json
 from kafka import KafkaConsumer
 
+RED     = "\033[1;31m"
+GREEN   = '\033[1;32m'
+YELLOW  = '\033[1;33m'
+BLUE    = "\033[1;34m"
+RESET   = "\033[0;0m"
+
 def positiveInt(value):
     ivalue = int(value)
     if ivalue <= 0:
@@ -82,6 +88,7 @@ if __name__ == "__main__":
 
     data["partitions"] = {}
     for topic in data["topics"]:
+        parts = consumer.partitions_for_topic(topic) 
         data["partitions"][topic] = consumer.partitions_for_topic(topic)
 
     if not args.noConsume:
@@ -104,4 +111,9 @@ if __name__ == "__main__":
         except KeyboardInterrupt as e:
                 consumer.close(autocommit=False)
 
-    print(data) if args.noConsume else print("Consumed:", data["consumed"], "messages")
+    #print(json.dumps(data["partitions"])) if args.noConsume else print("Consumed:", data["consumed"], "messages")
+    if args.noConsume:
+        parts = [k for k, v in data["partitions"].items()]
+        parts = sorted(parts)
+        for part in parts:
+            print(GREEN, part, BLUE, ": {} parts".format(len(data["partitions"][part])), RESET)
