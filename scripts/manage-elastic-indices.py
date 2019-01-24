@@ -86,6 +86,21 @@ DEFAULT_TEMPLATE = {
     "aliases": {}
 }
 
+SYSMON_TEMPLATE = {
+  "order": 15,
+  "version": 0,
+  "index_patterns": "*-sysmon-*",
+  "mappings":{
+    "doc": {
+      "properties": {
+        "Keywords": { 
+          "type": "text"
+        }
+      }
+    }
+  }
+}
+
 IPV4 = r'^(?:(?:\d{1,3}\.){3}\d{1,3})$'
 
 def regexValidatedIPv4Arg(s, pat=re.compile(IPV4)):
@@ -246,9 +261,14 @@ if __name__ == "__main__":
         print("Nope")
         sys.exit(2)
 
-    templates = { "default": DEFAULT_TEMPLATE }
+    templates = {
+            "default": DEFAULT_TEMPLATE,
+            "sysmon": SYSMON_TEMPLATE
+            }
+
     templates["default"]["settings"] = settings(shards=args.shards, repl=args.replicas, refr=args.refreshInterval)
     templates["default"]["index_patterns"][0] = args.tplPattern
+    templates["default"]["index_patterns"].append("peek-*")
 
     if args.indexPattern: updateExpr = re.compile(args.indexPattern)
 

@@ -3,6 +3,7 @@
 # A simple python script for consuming kafka messages according to user-defined command line arguments
 # Mainly for testing and reference when implementing custom consumers
 
+import sys
 import argparse
 import json
 from kafka import KafkaConsumer
@@ -57,8 +58,13 @@ if __name__ == "__main__":
             dest="disableOffsetCommit",
             action="store_true",
             default=False,
-            help="Disable offset commit. Consumed message offsets would not be stored under consumer group. Defaults to false."
-            )
+            help="Disable offset commit. Consumed message offsets would not be stored under consumer group. Defaults to false.")
+
+    parser.add_argument("--no-decode",
+            dest="nodecode",
+            action="store_true",
+            default=False,
+            help="Disable JSON decode.")
 
     parser.add_argument("--consume-key",
             dest="consumeKey",
@@ -99,14 +105,17 @@ if __name__ == "__main__":
                 key = msg.key.decode("utf-8") if msg.key else None
                 process = True if (key and args.consumeKey and args.consumeKey == key) or (not args.consumeKey) else False
                 if process:
-                    d = json.loads(msg.value.decode("utf-8"))
-                    d["kafka"] = {}
-                    d["kafka"]["timestamp"] = msg.timestamp
-                    d["kafka"]["partition"] = msg.partition
-                    d["kafka"]["offset"] = msg.offset
-                    d["kafka"]["key"] = key
-                    print(json.dumps(d))
-                    data["consumed"] += 1
+                    if not args.nodecode:
+                        d = json.loads(msg.value.decode("utf-8"))
+                        d["kafka"] = {}
+                        d["kafka"]["timestamp"] = msg.timestamp
+                        d["kafka"]["partition"] = msg.partition
+                        d["kafka"]["offset"] = msg.offset
+                        d["kafka"]["key"] = key
+                        print(json.dumps(d))
+                        data["consumed"] += 1
+                    else:
+                        print(msg.value.decode("utf-8"))
 
         except KeyboardInterrupt as e:
                 consumer.close(autocommit=False)
