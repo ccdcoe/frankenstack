@@ -86,10 +86,10 @@ DEFAULT_TEMPLATE = {
     "aliases": {}
 }
 
-SYSMON_TEMPLATE = {
+WINDOWS_TEMPLATE = {
   "order": 15,
   "version": 0,
-  "index_patterns": "*-sysmon-*",
+  "index_patterns": "*-windows-*",
   "mappings":{
     "doc": {
       "properties": {
@@ -263,7 +263,7 @@ if __name__ == "__main__":
 
     templates = {
             "default": DEFAULT_TEMPLATE,
-            "sysmon": SYSMON_TEMPLATE
+            "windows": WINDOWS_TEMPLATE
             }
 
     templates["default"]["settings"] = settings(shards=args.shards, repl=args.replicas, refr=args.refreshInterval)

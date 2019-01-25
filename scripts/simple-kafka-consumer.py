@@ -66,6 +66,12 @@ if __name__ == "__main__":
             default=False,
             help="Disable JSON decode.")
 
+    parser.add_argument("--kafka-meta",
+            dest="kafkameta",
+            action="store_true",
+            default=False,
+            help="Add metadata from kafka message params to printed message.")
+
     parser.add_argument("--consume-key",
             dest="consumeKey",
             default=None,
@@ -103,19 +109,21 @@ if __name__ == "__main__":
         try:
             for msg in consumer:
                 key = msg.key.decode("utf-8") if msg.key else None
+                d = msg.value.decode("utf-8")
                 process = True if (key and args.consumeKey and args.consumeKey == key) or (not args.consumeKey) else False
                 if process:
                     if not args.nodecode:
-                        d = json.loads(msg.value.decode("utf-8"))
-                        d["kafka"] = {}
-                        d["kafka"]["timestamp"] = msg.timestamp
-                        d["kafka"]["partition"] = msg.partition
-                        d["kafka"]["offset"] = msg.offset
-                        d["kafka"]["key"] = key
+                        d = json.loads(d)
+                        if args.kafkameta:
+                            d["kafka"] = {}
+                            d["kafka"]["timestamp"] = msg.timestamp
+                            d["kafka"]["partition"] = msg.partition
+                            d["kafka"]["offset"] = msg.offset
+                            d["kafka"]["key"] = key
                         print(json.dumps(d))
                         data["consumed"] += 1
                     else:
-                        print(msg.value.decode("utf-8"))
+                        print(d)
 
         except KeyboardInterrupt as e:
                 consumer.close(autocommit=False)
