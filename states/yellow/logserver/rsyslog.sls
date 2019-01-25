@@ -72,8 +72,8 @@ logserver.{{params.name}}:
     {% endif %}
     # TODO! Use a more official image
     - image: markuskont/rsyslog:latest
-    - log_driver: syslog
-    - log_opt: "tag={{params.name}}"
+    #- log_driver: syslog
+    #- log_opt: "tag={{params.name}}"
     {% if params.persist %}
     - restart-policy: always
     {% else %}
