@@ -2,6 +2,8 @@
 
 Busted. With duct tape, spit and tears. Brought to you by beer.
 
+![insanity!](/insanity.svg)
+
 ## A note about clustered components
 
 Most components are self-contained with minimal need for containerized network bridges. However, some tools like elasticsearch, kafka, zookeepeer, etc are designed to scale horizontally. Deploying an elastic cluster on a single host would serve no purpose other than to stay below Java ~32GB heap rule. Since most components are, or will be, dockerized, then it's possible to leverage [docker overlay network](https://docs.docker.com/network/overlay/) to connect clustered images over multiple worker hosts. Creation of this network is not handled by states.
