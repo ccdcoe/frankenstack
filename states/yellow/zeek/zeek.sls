@@ -72,7 +72,7 @@ zeek-af-packet:
 zeek-node-cfg:
   file.managed:
     - name: /usr/local/etc/node.cfg
-    - source: salt://node.cfg
+    - source: salt://zeeky/bro/etc/node.cfg
 
 zeek-af-packet-deploy:
   cmd.run:
@@ -88,22 +88,22 @@ zeek-af-packet-deploy:
 zeek-policy-kafka:
   file.managed:
     - name: /usr/local/share/bro/site/bro.bro
-    - source: salt://zeeky/bro.bro
+    - source: salt://zeeky/bro/share/bro/site/bro.bro
 
 zeek-policy-packet:
   file.managed:
     - name: /usr/local/share/bro/site/packet_bin.bro
-    - source: salt://zeeky/packet_bin.bro
+    - source: salt://zeeky/bro/share/bro/site/packet_bin.bro
 
 zeek-policy-local:
   file.managed:
     - name: /usr/local/share/bro/site/local.bro
-    - source: salt://zeeky/local.bro
+    - source: salt://zeeky/bro/share/bro/site/local.bro
 
 zeek-beacons:
   file.managed:
     - name: /srv/cobalt-activity/beacons.py
-    - source: salt://zeeky/beacons.py
+    - source: salt://zeeky/py/beacons.py
 
 zeek-run:
   cmd.run:
