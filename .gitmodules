@@ -16,3 +16,6 @@
 [submodule "peek"]
 	path = peek
 	url = https://github.com/ccdcoe/go-peek.git
+[submodule "states/yellow/zeek/zeeky"]
+	path = states/yellow/zeek/zeeky
+	url = https://github.com/ccdcoe/zeeky
