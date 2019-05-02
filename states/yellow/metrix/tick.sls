@@ -67,6 +67,9 @@ metrix.server.{{params.name}}:
       {% if 'http' in params.listeners %}
       - {{params.listeners.http.port}}:8086/tcp
       {% endif %}
+      {% if 'graphite' in params.listeners %}
+      - {{params.listeners.graphite.port}}:2003/tcp
+      {% endif %}
     - binds:
       - {{params.host.config}}/influxdb.conf:/etc/influxdb/influxdb.conf:ro
       - {{params.name}}-data:/var/lib/influxdb:rw
