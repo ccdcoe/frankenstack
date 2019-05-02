@@ -1,0 +1,48 @@
+version=2
+include=stdtypes.rulebase
+
+type=@transfer:%[
+  {"type": "literal", "text": "Transfer status:"},
+  {"type": "whitespace"},
+  {"type": "rest", "name": "status"}
+]%
+type=@transfer:%[
+  {"type": "literal", "text": "failed to connect:"},
+  {"type": "whitespace"},
+  {"type": "rest", "name": "status"}
+]%
+type=@transfer:%[
+  {"type": "literal", "text": "Transfer completed:"},
+  {"type": "whitespace"},
+  {"type": "rest", "name": "success_stats"}
+]%
+type=@transfer:%[
+  {"type": "literal", "text": "connected using"},
+  {"type": "whitespace"},
+  {"type": "char-to", "name": "src_ip", "extradata": "#"},
+  {"type": "literal", "text": "#"},
+  {"type": "number", "name": "src_port"},
+]%
+
+type=@query:%[
+  {"type": "word", "name": "record"},
+  {"type": "whitespace"},
+  {"type": "word", "name": "class"},
+  {"type": "whitespace"},
+  {"type": "word", "name": "type"},
+  {"type": "whitespace"},
+  {"type": "word", "name": "flags"},
+]%
+
+type=@zone:%[
+  {"type": "char-to", "name": "zone", "extradata":"/"},
+  {"type": "literal", "text": "/"},
+  {"type": "char-to", "name": "class", "extradata":"/"},
+  {"type": "literal", "text": '/'},
+  {"type": "word", "name": "view"},
+]%
+
+rule=: %date:word% %time:word% %type:char-to::%: %sev:char-to::%: client %src_ip:char-to:#%#%src_port:number% (%record:char-to:)%): view %view:char-to::%: query: %query:@query% (%server:char-to:)%)
+rule=: %date:word% %time:word% %type:char-to::%: %sev:char-to::%: transfer of '%zone:char-to:'%' from %src_ip:char-to:#%#%src_port:number%: %transfer:@transfer%
+rule=: %date:word% %time:word% %type:char-to::%: %sev:char-to::%: zone %zone:@zone% transferred serial %transfer_serial:number%: TSIG '%tsig:char-to:'%'
+rule=: %parsefail:rest%

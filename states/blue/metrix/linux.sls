@@ -25,11 +25,18 @@ metrix.client.tick.telegraf.core.config:
     - name: /etc/telegraf/telegraf.d/core.conf
     - source:  salt:///blue/metrix/config/telegraf-core.conf
     - template: jinja
-    - defaults:
-      outputs: {{pillar.metrix.influx}}
-      hostname: {{pillar.metrix.hostname}}
     - require:
       - file: metrix.client.tick.telegraf
+
+{% if "monitor_docker" in pillar.metrix and pillar.metrix.monitor_docker %}
+metrix.client.tick.telegraf.docker.config:
+  file.managed:
+    - name: /etc/telegraf/telegraf.d/docker.conf
+    - source:  salt:///blue/metrix/config/telegraf-docker.conf
+    - template: jinja
+    - require:
+      - file: metrix.client.tick.telegraf
+{% endif %}
 
 metrix.client.tick.telegraf.service:
   service.running:
@@ -38,6 +45,12 @@ metrix.client.tick.telegraf.service:
     - watch:
       - file: metrix.client.tick.telegraf
       - file: metrix.client.tick.telegraf.core.config
+      {% if "monitor_docker" in pillar.metrix and pillar.metrix.monitor_docker %}
+      - file: metrix.client.tick.telegraf.docker.config
+      {% endif %}
     - require:
       - file: metrix.client.tick.telegraf
       - file: metrix.client.tick.telegraf.core.config
+      {% if "monitor_docker" in pillar.metrix and pillar.metrix.monitor_docker %}
+      - file: metrix.client.tick.telegraf.docker.config
+      {% endif %}

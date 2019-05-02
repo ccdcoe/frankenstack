@@ -136,6 +136,8 @@ logserver:
       source: salt:///yellow/logserver/config-rsyslog/stdtypes.rulebase
     - name: snoopy
       source: salt:///yellow/logserver/config-rsyslog/snoopy.rulebase
+    - name: named
+      source: salt:///yellow/logserver/config-rsyslog/named.rulebase
   configs:
     - frompath: salt:///yellow/logserver/config-rsyslog/010-rulesets.conf
       destname: 010-rulesets.conf
