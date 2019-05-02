@@ -20,6 +20,7 @@ docker:
     - pkgs:
       - docker-ce
       - python-docker
+      - python3-docker
       - python-backports.ssl-match-hostname
       {% if 'blockdev' in pillar and pillar.blockdev.name in grains.disks %}
       - mount: general.datadir

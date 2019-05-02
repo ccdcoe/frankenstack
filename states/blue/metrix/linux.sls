@@ -12,18 +12,32 @@ metrix.client.tick.telegraf:
     - refresh: True
     - require:
       - pkgrepo: metrix.client.tick.repo
-  service.running:
-    - name: telegraf
-    - enable: True
-    - watch:
-      - file: metrix.client.tick.telegraf
-    - require:
-      - file: metrix.client.tick.telegraf
   file.managed:
     - name: /etc/telegraf/telegraf.conf
-    - source: {{pillar.metrix.config}}
+    - source: salt:///blue/metrix/config/telegraf.conf
     - template: jinja
     - defaults:
       outputs: {{pillar.metrix.influx}}
       hostname: {{pillar.metrix.hostname}}
 
+metrix.client.tick.telegraf.core.config:
+  file.managed:
+    - name: /etc/telegraf/telegraf.d/core.conf
+    - source:  salt:///blue/metrix/config/telegraf-core.conf
+    - template: jinja
+    - defaults:
+      outputs: {{pillar.metrix.influx}}
+      hostname: {{pillar.metrix.hostname}}
+    - require:
+      - file: metrix.client.tick.telegraf
+
+metrix.client.tick.telegraf.service:
+  service.running:
+    - name: telegraf
+    - enable: True
+    - watch:
+      - file: metrix.client.tick.telegraf
+      - file: metrix.client.tick.telegraf.core.config
+    - require:
+      - file: metrix.client.tick.telegraf
+      - file: metrix.client.tick.telegraf.core.config

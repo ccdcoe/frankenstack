@@ -24,10 +24,62 @@ ela.vol.data.{{params.name}}:
 
 # NOTE! This is a hack to work around dockerng state issue in our environment
 # See commented dockerng states for proper deployment
+{% if "split_roles" in params and params.split_roles %}
+
+{% for role in ["master", "proxy", "worker"] %}
+{% set elaName = [params.name, params.id|string, role]|join("-")%}
+
+{% if role == "master" %}
+
+{% set ela_heap = params.master_heap %}
+{% set role_config = "-e node.master=true -e node.ingest=false -e node.data=false"%}
+
+{% elif role == "proxy" %}
+
+{% set ela_heap = params.proxy_heap %}
+{% set role_config = "-e node.master=false -e node.ingest=false -e node.data=false"%}
+
+{% elif role == "worker" %}
+
+{% set ela_heap = params.worker_heap %}
+{% set role_config = "-e node.master=false -e node.ingest=true -e node.data=true"%}
+
+{% endif %}
+
+ela.{{params.name}}.{{role}}:
+  cmd.run:
+    - name: docker run -ti {%if params.persist%} -d --restart=always {%else%} --rm {%endif%} --name={{elaName}} --hostname={{elaName}} {%if 'network' in params%}--network={{params.network}}{%endif%} {%if role == "worker"%}-v {{params.name}}-ela-data:/usr/share/elasticsearch/data:rw{%endif%} {%if role == "proxy"%} -p {{params.ports.http}}:9200/tcp{%endif%} -e "ES_JAVA_OPTS=-Xms{{ela_heap}} -Xmx{{ela_heap}}" -e "cluster.name={{params.name}}" -e "node.name={{grains.fqdn}}-{{elaName}}" {{role_config}} {%for var in params.env%} -e "{{var}}" {%endfor%} --log-driver syslog --log-opt tag="{{elaName}}" docker.elastic.co/elasticsearch/elasticsearch-oss:{{params.version.ela}}
+    - unless: docker ps -a | grep "{{elaName}}"
+    - require: [ docker_volume: ela.vol.data.{{params.name}}, sysctl: ela.fs.max_map_count ]
+
+ela.start.{{params.name}}.{{role}}:
+  cmd.run:
+    - name: docker container start {{elaName}}
+    - onlyif: docker ps --filter "status=exited" | grep {{elaName}}
+    - require: 
+      - cmd: ela.{{params.name}}.{{role}}
+
+{% endfor %}
+
+{% set kibanaName = [params.name, params.id|string, "kibana"]|join("-")%}
+ela.kibana.{{params.name}}:
+  cmd.run:
+    - name: docker run -ti {%if params.persist%} -d --restart=always {%else%} --rm {%endif%} --name={{kibanaName}} --hostname={{kibanaName}} {%if 'network' in params%}--network={{params.network}}{%endif%} -p {{params.ports.kibana}}:5601/tcp -e "SERVER_NAME={{kibanaName}}" -e "ELASTICSEARCH_URL=http://{{params.name}}-{{params.id}}-proxy:9200" --log-driver syslog --log-opt tag="{{kibanaName}}" docker.elastic.co/kibana/kibana-oss:{{params.version.kibana}}
+    - unless: docker ps -a | grep "{{kibanaName}}"
+    - require: [ cmd: ela.{{params.name}}.proxy ]
+
+ela.kibana.start.{{params.name}}:
+  cmd.run:
+    - name: docker container start {{kibanaName}}
+    - onlyif: docker ps --filter "status=exited" | grep {{kibanaName}}
+    - require: 
+      - cmd: ela.kibana.{{params.name}}
+
+{% else %}
 {% set elaName = [params.name, params.id|string, "ela"]|join("-")%}
 ela.{{params.name}}:
   cmd.run:
-    - name: docker run -ti {%if params.persist%} -d --restart=always {%else%} --rm {%endif%} --name={{elaName}} --hostname={{elaName}} {%if 'network' in params%}--network={{params.network}}{%endif%} -v {{params.name}}-ela-data:/usr/share/elasticsearch/data:rw -p {{params.ports.http}}:9200/tcp {%for var in params.env%} -e "{{var}}" {%endfor%} --log-driver syslog --log-opt tag="{{elaName}}" docker.elastic.co/elasticsearch/elasticsearch-oss:{{params.version.ela}}
+    - name: docker run -ti {%if params.persist%} -d --restart=always {%else%} --rm {%endif%} --name={{elaName}} --hostname={{elaName}} {%if 'network' in params%}--network={{params.network}}{%endif%} -v {{params.name}}-ela-data:/usr/share/elasticsearch/data:rw -p {{params.ports.http}}:9200/tcp {%if "java_heap" in params%} -e "ES_JAVA_OPTS=-Xms{{params.java_heap}} -Xmx{{params.java_heap}}" {%endif%} {%for var in params.env%} -e "{{var}}" {%endfor%} --log-driver syslog --log-opt tag="{{elaName}}" docker.elastic.co/elasticsearch/elasticsearch-oss:{{params.version.ela}}
     - unless: docker ps -a | grep "{{elaName}}"
     - require: [ docker_volume: ela.vol.data.{{params.name}}, sysctl: ela.fs.max_map_count ]
 
@@ -51,50 +103,6 @@ ela.kibana.start.{{params.name}}:
     - onlyif: docker ps --filter "status=exited" | grep {{kibanaName}}
     - require: 
       - cmd: ela.kibana.{{params.name}}
-
-#ela.{{params.name}}:
-#  docker_container.running:
-#    - name: {{params.name}}-{{params.id}}-ela
-#    - hostname: {{params.name}}
-#    # TODO! Move image settings somewhere else
-#    - image:  docker.elastic.co/elasticsearch/elasticsearch-oss:{{params.version.ela}}
-#    - log_driver: syslog
-#    - log_opt: "tag={{params.name}}"
-#    {% if params.persist %}
-#    - restart-policy: always
-#    {% else %}
-#    - auto_remove: True
-#    {% endif %}
-#    - network_mode: {{params.network}}
-#    - binds:
-#      - {{params.name}}-ela-data:/usr/share/elasticsearch/data:rw
-#    - port_bindings:
-#      - {{params.ports.http}}:9200/tcp
-#    - environment: {{params.env}}
-#    - require:
-#      - docker_volume: ela.vol.data.{{params.name}}
-#      - sysctl: ela.fs.max_map_count
-#
-#ela.kibana.{{params.name}}:
-#  docker_container.running:
-#    - name: {{params.name}}-{{params.id}}-kibana
-#    - hostname: {{params.name}}-kibana
-#    # TODO! Move image settings somewhere else
-#    - image:  docker.elastic.co/kibana/kibana-oss:{{params.version.kibana}}
-#    - log_driver: syslog
-#    - log_opt: "tag={{params.name}}-kibana"
-#    {% if params.persist %}
-#    - restart-policy: always
-#    {% else %}
-#    - auto_remove: True
-#    {% endif %}
-#    - network_mode: {{params.network}}
-#    - port_bindings:
-#      - {{params.ports.kibana}}:5601/tcp
-#    - environment:
-#      - SERVER_NAME: {{params.name}}-kibana
-#      - ELASTICSEARCH_URL: http://{{params.name}}-{{params.id}}:{{params.ports.http}}
-#    - require:
-#      - docker_container: ela.{{params.name}}
+{% endif %}
 
 {% endfor %}

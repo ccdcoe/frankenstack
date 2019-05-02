@@ -48,7 +48,7 @@ metricserver:
       chrono:
         port: 8889
 
-logservers:
+logserver:
   name: rsyslog-collector-blue
   persist: True
   host:
@@ -130,6 +130,8 @@ logservers:
       - port: 1514
         ruleset: suricata
   lognorm:
+    - name: cef
+      source: salt:///yellow/logserver/config-rsyslog/cef.rulebase
     - name: stdtypes
       source: salt:///yellow/logserver/config-rsyslog/stdtypes.rulebase
     - name: snoopy

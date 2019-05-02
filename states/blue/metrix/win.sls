@@ -2,6 +2,11 @@
 metrix.client.tick.telegraf.dir:
   file.directory:
     - name: 'C:\Program Files\Telegraf'
+metrix.client.tick.telegraf.dir.config:
+  file.directory:
+    - name: 'C:\Program Files\Telegraf\config'
+    - require:
+      - file: metrix.client.tick.telegraf.dir
 
 metrix.client.tick.telegraf.installer:
   file.managed:
@@ -38,14 +43,23 @@ metrix.client.tick.telegraf.remove:
       - archive: metrix.client.tick.telegraf.binary
       - service: metrix.client.tick.telegraf.remove
 
+metrix.client.tick.telegraf.config.core:
+  file.managed:
+    - name: 'C:\Program Files\Telegraf\config\core.config'
+    - source:  salt:///blue/metrix/config/telegraf-core.conf
+    - template: jinja
+    - require:
+      - file: metrix.client.tick.telegraf.dir.config
+
 metrix.client.tick.telegraf:
   cmd.run:
-    - name: '"C:\Program Files\Telegraf\telegraf\telegraf.exe" --service install --config "C:\Program Files\Telegraf\telegraf.conf"'
+    - name: '"C:\Program Files\Telegraf\telegraf\telegraf.exe" --service install --config "C:\Program Files\Telegraf\telegraf.conf" --config-directory "C:\Program Files\Telegraf\config"'
     - unless: 'C:\windows\system32\cmd.exe /c sc.exe query telegraf'
     - shell: 'windows'
     - require:
       - archive: metrix.client.tick.telegraf.binary
       - cmd: metrix.client.tick.telegraf.remove
+      - file: metrix.client.tick.telegraf.config.core
   service.running:
     - name: telegraf
     - enable: True
