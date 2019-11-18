@@ -1,6 +1,3 @@
-[submodule "states/win/repo-ng"]
-	path = states/win/repo-ng
-	url = https://github.com/saltstack/salt-winrepo-ng.git
 [submodule "docs"]
 	path = docs
 	url = https://github.com/ccdcoe/Frankencoding.git
@@ -10,12 +7,6 @@
 [submodule "dockerfiles"]
 	path = dockerfiles
 	url = https://github.com/markuskont/dockerfiles
-[submodule "states/blue/sysmon/swift-config"]
-	path = states/blue/sysmon/swift-config
-	url = https://github.com/SwiftOnSecurity/sysmon-config
 [submodule "peek"]
 	path = peek
 	url = https://github.com/ccdcoe/go-peek.git
-[submodule "states/yellow/zeek/zeeky"]
-	path = states/yellow/zeek/zeeky
-	url = https://github.com/ccdcoe/zeeky
