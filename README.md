@@ -2,7 +2,9 @@
 
 Busted. With duct tape, spit and tears. Brought to you by beer.
 
-![insanity!](/insanity.svg)
+### 2019
+
+![2019!](/2019.svg)
 
 ## A note about clustered components
 
