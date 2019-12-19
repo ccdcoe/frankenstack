@@ -1,0 +1,52 @@
+ansible_user: root
+ansible_ssh_private_key_file: "{{exercise_key|mandatory}}"
+
+exercise_domain: "{{network.dns.domain|mandatory}}"
+
+vm_disks:
+  - size_gb: 30
+    type: thin
+    datastore: "{{ vm_datastore }}"
+
+vm_hardware:
+  memory_mb: 2048
+  num_cpus: 2
+
+lv:
+  disk: /dev/sdb
+  node: sdb
+  vg_name: vg.data
+  lv_name: services
+  mount: /srv/pool-0
+
+default_mount: /srv
+host_container_root: "{{ lv.mount if lv.node in ansible_devices else default_mount }}/docker-containers"
+
+datacenter: clab
+elastic_heap_gb: 8
+
+send_metrix:
+  - database: yellow
+    url: http://xs20-yt-tick-worker-01-influx:8086
+  - database: yellow
+    url: http://xs20-yt-tick-worker-02-influx:8086
+  - database: yellow
+    url: http://xs20-yt-tick-worker-03-influx:8086
+
+rsyslog_winlogbeat_game_config_elastic: {}
+logserver_game_prefix: "rsyslog-game-{{ inventory_hostname }}"
+logserver_yellow_prefix: "rsyslog-yellow-{{ inventory_hostname }}"
+
+send_logs:
+  - proto: udp
+    port: 515
+    host: "collector-01.{{exercise_domain}}"
+
+winlogbeat:
+  kafka:
+    topic: test-topic-windows
+    hosts:
+      - "collector-01.{{exercise_domain}}:9092"
+      - "collector-02.{{exercise_domain}}:9092"
+      - "collector-03.{{exercise_domain}}:9092"
+    varsion: 2.0.0

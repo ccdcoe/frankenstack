@@ -1,0 +1,10 @@
+clone:
+  memory_mb: 1024
+  num_cpus: 2
+  data_disk_gb: 25
+
+vm_hardware:
+  memory_mb: 1024
+  num_cpus: 2
+
+last_octet: "{{ lookup('vars', 'last_octet_start') + groups['manager'].index(inventory_hostname) }}"

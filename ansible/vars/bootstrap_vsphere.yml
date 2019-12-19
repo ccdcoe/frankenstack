@@ -1,0 +1,13 @@
+post_scripts_folder_on_target: c:\files
+
+vm_networks:
+  - name: "{{ network.sinet.name }}"
+    device_type: 'vmxnet3'
+
+win_vm_networks:
+  - name: "{{ network.sinet.name }}"
+    device_type: 'vmxnet3'
+    ip: "{{ network.sinet.ipv4 | ipaddr(lookup('vars', 'last_octet')) | ipaddr('address') }}"
+    gateway: "{{ network.sinet.ipv4 | ipaddr(network.sinet.gw) | ipaddr('address') }}"
+    netmask: "{{ network.sinet.mask }}"
+

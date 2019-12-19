@@ -1,0 +1,23 @@
+#jinja2: trim_blocks:False
+# An "In-Memory Queue" is created for remote logging.
+$WorkDirectory /var/spool/rsyslog    # where to place spool files
+$ActionQueueFileName queue      # unique name prefix for spool files
+$ActionQueueMaxDiskSpace 1g     # spool space limit (use as much as possible)
+$ActionQueueSaveOnShutdown on   # save messages to disk on shutdown
+$ActionQueueType LinkedList     # run asynchronously
+$ActionResumeRetryCount -1      # infinety retries if host is down
+
+# Preserve domain suffix in syslog hostname
+# PS! Does not work with rsyslog 5 (bug, not a feature)
+$PreserveFQDN on
+
+# Use default format
+$ActionFileDefaultTemplate RSYSLOG_TraditionalFileFormat
+
+{%- for server in servers -%}
+{% if server.proto == 'tcp' %}
+*.* @@(o){{server.host}}:{{server.port}};{%if 'format' in server%}{{server.format}}{%else%}RSYSLOG_ForwardFormat{%endif%}
+{% elif server.proto == 'udp' %}
+*.* @{{server.host}}:{{server.port}};{%if 'format' in server%}{{server.format}}{%else%}RSYSLOG_ForwardFormat{%endif%}
+{%- endif -%}
+{%- endfor -%}

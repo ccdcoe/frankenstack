@@ -1,0 +1,13 @@
+last_octet: "{{ lookup('vars', 'last_octet_start') + groups['collector'].index(inventory_hostname) }}"
+
+vm_disks:
+  - size_gb: 30
+    type: thin
+    datastore: "{{ vm_datastore }}"
+  - size_gb: 500
+    type: thin
+    datastore: "{{ vm_datastore }}"
+
+vm_hardware:
+  memory_mb: 4096
+  num_cpus: 4

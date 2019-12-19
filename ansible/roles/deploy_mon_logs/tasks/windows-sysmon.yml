@@ -1,0 +1,13 @@
+---
+- name: Copy sysmon config
+  win_copy:
+    src: sysmonconfig.xml
+    dest: "{{ post_scripts_folder_on_target }}\\sysmonconfig-test.xml"
+
+- name: Update sysmon config
+  win_shell: "Sysmon64.exe -c {{ post_scripts_folder_on_target }}\\sysmonconfig-test.xml"
+
+- name: Remove sysmon config
+  win_file:
+    path: "{{ post_scripts_folder_on_target }}\\sysmonconfig-test.xml"
+    state: absent

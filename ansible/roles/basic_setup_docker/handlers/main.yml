@@ -1,0 +1,25 @@
+---
+- name: start docker
+  service:
+    name: docker
+    state: started
+
+- name: docker cleanup
+  service:
+    name: docker
+    state: stopped
+  notify: clean docker directory
+
+- name: clean docker directory
+  file:
+    path: /var/lib/docker/
+    state: absent
+  notify: symlink data dir
+
+- name: symlink data dir
+  file:
+    path: /var/lib/docker
+    src: "{{data.mountpoint}}/docker"
+    state: link
+    force: yes
+  notify: start docker

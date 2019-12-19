@@ -1,0 +1,173 @@
+---
+moloch_custom_target_fields:
+  - name: target.original
+    kind: lotermfield
+    friendly: Target name
+    help: Target host unaltered host name
+  - name: target.vm
+    kind: lotermfield
+    friendly: Target VM name
+    help: Virtual machine name in vsphere
+  - name: target.pretty
+    kind: lotermfield
+    friendly: Anonymized
+    help: Target host anonymized name
+  - name: target.os
+    kind: lotermfield
+    friendly: Operating System
+    help: Target host OS
+  - name: target.zones
+    kind: lotermfield
+    friendly: Zones that target belongs to
+    help: Target host network zone
+  - name: target.desc
+    kind: lotermfield
+    friendly: Target description
+    help: Target host description as documented by developer
+  - name: target.owner
+    kind: lotermfield
+    friendly: Target owner
+    help: Person who built the damn thing
+
+moloch_custom_views:
+  - name: target
+    title: XS20 Targets
+    fields: "{{ moloch_custom_target_fields | map(attribute='name') | list | join(',') }}"
+
+moloch_wise_ext_port: 8081
+moloch_wise_config:
+  redis:
+    - name: Blue team assets
+      host: xs20-yt-redis-worker-0
+      type: ip
+
+moloch_prefix: "xs20-yt-owl"
+moloch:
+  name: "{{moloch_prefix}}"
+  capture:
+    elasticsearch: 
+      - "moloch.elastic.{{exercise_domain}}"
+    wise:
+      port: "{{ moloch_wise_ext_port }}"
+      host: "127.0.0.1"
+  viewer:
+    elasticsearch: 
+      - xs20-yt-elastic-moloch-0:9200
+      - xs20-yt-elastic-moloch-1:9200
+      - xs20-yt-elastic-moloch-2:9200
+      - xs20-yt-elastic-moloch-3:9200
+    network: "{{ docker_networks[2] }}"
+    wise:
+      port: "{{moloch_wise_ext_port}}"
+      host: "{{moloch_prefix}}-wise"
+  wise:
+    published_port: "{{ moloch_wise_ext_port }}"
+    config: "{{ moloch_wise_config }}"
+  interfaces:
+    - "{{ suricata_default_interface }}"
+  secret: "{{ moloch_secret }}"
+  host_pcap_dir: "{{ host_pcap_dir | default('/srv/pcap') }}"
+  create_host_pcap_dir: no
+  container_uid: 1000
+  db:
+    shards: 3
+    replicas: 1
+    shards_per_node: 3
+  suricata:
+    container_dir: /var/log/suricata
+    file: alert.json
+  custom_fields: "{{ moloch_custom_target_fields }}"
+  custom_views: "{{ moloch_custom_views }}"
+
+suricata_home_nets: "{{ game_zones.home | list | map(attribute='range') | list }}"
+suricata:
+  name: "xs20-yt-meerkat"
+  sensor_name: "{{ inventory_hostname }}"
+  kafka:
+    topic: "{{ inventory_hostname }}-suricata"
+    brokers:
+      - "collector-01.{{exercise_domain}}:9092"
+      - "collector-02.{{exercise_domain}}:9092"
+      - "collector-03.{{exercise_domain}}:9092"
+    input_socket_dir: /var/lib/peek
+    input_socket_file: suricata-events.socket
+  interface: "{{ suricata_default_interface }}"
+  rule:
+    sources:
+      - "{{suricata_etpro_rule_url}}"
+      - https://sslbl.abuse.ch/blacklist/sslblacklist.rules
+    disable: []
+
+suricata_eve_only_long_alert:
+  payload: yes             # enable dumping payload in Base64
+  payload-buffer-size: 4kb # max size of payload buffer to output in eve-log
+  payload-printable: yes   # enable dumping payload in printable (lossy) format
+  packet: yes              # enable dumping of packet (without stream segments)
+  metadata: yes            # enable inclusion of app layer metadata with alert. Default yes
+  http-body: yes           # Requires metadata; enable dumping of http body in Base64
+  http-body-printable: yes # Requires metadata; enable dumping of http body in printable format
+  tagged-packets: yes
+
+suricata_eve_log:
+  - eve-log:
+      enabled: yes
+      filetype: unix_stream
+      filename: "{{suricata.kafka.input_socket_dir}}/{{suricata.kafka.input_socket_file}}"
+      community-id: true
+      types: "{{ suricata_base_eve_types }}"
+  - eve-log:
+      enabled: yes
+      filetype: regular
+      filename: alert.json
+      pcap-file: false
+      community-id: true
+      community-id-seed: 0
+      xff:
+        enabled: yes
+        mode: extra-data
+        deployment: reverse
+        header: X-Forwarded-For
+      types:
+        - alert: "{{ suricata_eve_only_long_alert }}"
+  - eve-log:
+      enabled: yes
+      filetype: regular
+      filename: stats.json
+      pcap-file: false
+      types:
+        - stats:
+            totals: yes
+            threads: no
+            deltas: no
+
+suricata_base_eve_types:
+  - alert: "{{suricata_eve_only_long_alert}}"
+  - anomaly:
+      enabled: yes
+      types:
+  - http:
+      extended: yes
+  - dns:
+  - tls:
+      extended: yes
+  - files:
+      force-magic: no
+  - smtp:
+  - dnp3
+  - ftp
+  - rdp
+  - nfs
+  - smb
+  - tftp
+  - ikev2
+  - krb5
+  - snmp
+  - sip
+  - dhcp:
+      enabled: yes
+      extended: no
+  - ssh
+  - stats:
+      totals: yes
+      threads: no
+      deltas: no

@@ -1,0 +1,42 @@
+host_container_root: /srv/docker-containers
+rsyslog_image: markuskont/rsyslog
+
+logserver:
+  name: "rsyslog-server-{{ inventory_hostname }}"
+  rulesets:
+    - name: linux
+      hourly: False
+      byhost: True
+      bySrcIP: True
+      normalize:
+        - name: snoopy
+          filter: '$programname contains "snoopy"'
+          stop: True
+    - name: windows
+      hourly: False
+      byhost: True
+      bySrcIP: True
+      sort:
+        - name: sysmon
+          filter: '$programname contains "Sysmon"'
+          stop: True
+    - name: suricata
+      hourly: True
+      byhost: False
+      bySrcIP: False
+  listeners:
+    # TODO!
+    kafka:
+      - brokers: 
+        - broker-1
+        - broker-2
+        - broker-3
+        topic: topic
+        ruleset: winlogbeat
+    udp:
+      - port: 514
+        ruleset: linux
+      - port: 515
+        ruleset: windows
+      - port: 1514
+        ruleset: suricata

@@ -1,0 +1,37 @@
+---
+- name: Create a new primary partition
+  parted:
+    device: "{{ lv.disk }}"
+    number: 1
+    state: present
+
+- name: Create a volume group on top of "{{ lv.disk }}"
+  lvg:
+    vg: "{{ lv.vg_name }}"
+    pvs: "{{ lv.disk }}1"
+
+- name: Create a logical volume the size of all remaining space in the volume group
+  lvol:
+    vg: "{{ lv.vg_name }}"
+    lv: services
+    size: 100%FREE
+    shrink: no
+
+- set_fact:
+    data: 
+      cacheable: yes
+      blockdev: "/dev/mapper/{{lv.vg_name}}-{{lv.lv_name}}"
+      mountpoint: "{{lv.mount}}"
+
+- name: Create a "{{ filesystem.type }}" filesystem on lv "{{ lv.lv_name }}"
+  filesystem:
+    fstype: "{{ filesystem.type }}"
+    dev: "{{data.blockdev}}"
+
+- name: Mount up device
+  mount:
+    path: "{{data.mountpoint}}"
+    src: "{{data.blockdev}}"
+    fstype: "{{filesystem.type}}"
+    opts: "{{filesystem.mount_opts}}"
+    state: mounted

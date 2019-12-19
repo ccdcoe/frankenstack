@@ -1,0 +1,33 @@
+---
+- name: pull influxdb image
+  docker_image:
+    name: "{{ influxdb_image }}"
+    source: pull
+  retries: 15
+  delay: 2
+  register: result
+  until: not result.failed
+
+- name: Create data volume for influxdb
+  docker_volume:
+    name: "data-{{ tick.name }}-influx"
+    state: present
+
+- name: Create docker container for influxdb
+  docker_container:
+    name: "{{ tick.name }}-{{ inventory_hostname }}-influx"
+    hostname: "{{ tick.name }}-{{ inventory_hostname }}-influx"
+    image: "{{ influxdb_image }}"
+    state: started
+    restart_policy: unless-stopped
+    volumes:
+      - "data-{{ tick.name }}-influx:/var/lib/influxdb:rw"
+
+- name: Turn influx into octopus that has access to all networks
+  docker_network:
+    name: "{{ item }}"
+    driver: overlay
+    connected:
+      - "{{ tick.name }}-{{ inventory_hostname }}-influx"
+    appends: yes
+  loop: "{{ docker_networks }}"

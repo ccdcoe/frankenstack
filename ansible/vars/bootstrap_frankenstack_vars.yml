@@ -1,0 +1,104 @@
+---
+docker_networks:
+  - yellow-main-overlay
+  - yellow-collector-overlay
+  - yellow-work-overlay
+  - yellow-mgmt-overlay
+
+prefix: xs20-yt-
+dev_prefix: "{{prefix}}devel-{{inventory_hostname}}"
+
+envoy_networks:
+  - name: "{{docker_networks[2]}}"
+
+envoy_prefix: "{{prefix}}"
+
+zookeeper_clusters:
+  # Zookeeper to support kafka cluster that is exposed to targets
+  - name: "{{prefix}}zk-collector"
+    hostgroup: worker
+    network: "{{ docker_networks[1] }}"
+    expose: []
+
+  # Zookeeper to support kafka cluster that YT uses for data processing and pipelining
+  - name: "{{prefix}}zk-worker"
+    hostgroup: worker
+    network: "{{ docker_networks[2] }}"
+    expose: 
+    - 2181:2181/tcp
+
+kafka_clusters:
+  - name: "{{prefix}}kafka-collector"
+    hostgroup: collector
+    network: "{{ docker_networks[1] }}"
+    expose:
+      host: "{{ ansible_all_ipv4_addresses | ipaddr(network.sinet.ipv4) | flatten | min }}"
+      port: 9092
+    zk:
+      cluster: "{{prefix}}zk-collector"
+      hostgroup: worker
+    data:
+      retention_hours: 4
+      retention_bytes: 75000000000
+      partitions: "{{groups['collector'] | length}}"
+      replicas: 1
+
+  - name: "{{prefix}}kafka-worker"
+    hostgroup: worker
+    network: "{{ docker_networks[2] }}"
+    expose:
+      host: "{{ ansible_all_ipv4_addresses | ipaddr(network.sinet.ipv4) | flatten | min }}"
+      port: 9092
+    zk:
+      cluster: "{{prefix}}zk-worker"
+      hostgroup: worker
+    data:
+      retention_bytes: 75000000000
+      retention_hours: 4
+      partitions: "{{groups['worker'] | length}}"
+      replicas: 1
+
+redis_servers:
+  - name: "{{prefix}}redis-collector"
+    hostgroup: collector
+    network: "{{docker_networks[1]}}"
+    expose: 
+      - 6379:6379/tcp
+
+  - name: "{{prefix}}redis-worker"
+    hostgroup: worker
+    network: "{{docker_networks[2]}}"
+    expose: 
+      - 6379:6379/tcp
+
+elastic_clusters:
+  - name: "{{prefix}}elastic-logs"
+    cluster_pretty: josephine
+    hostgroup: db
+    network: "{{docker_networks[2]}}"
+    datacenter: "{{datacenter}}"
+    class: hot
+    proxy: "http://logs.elastic.{{exercise_domain}}"
+    manage_template: true
+    memory_gb: 
+      node: "{{elastic_heap_gb}}"
+
+  - name: "{{prefix}}elastic-moloch"
+    cluster_pretty: isabel
+    hostgroup: db
+    network: "{{docker_networks[2]}}"
+    datacenter: "{{datacenter}}"
+    class: hot
+    manage_template: false
+    memory_gb: 
+      node: "{{elastic_heap_gb}}"
+
+cassandra_clusters:
+  - name: "{{prefix}}cass"
+    hostgroup: db
+    network: "{{docker_networks[2]}}"
+    datacenter: "{{datacenter}}"
+
+tick:
+  name: "{{prefix}}tick"
+  hostgroup: db

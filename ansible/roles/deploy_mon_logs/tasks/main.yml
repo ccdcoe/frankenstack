@@ -1,0 +1,8 @@
+---
+- name: basic rsyslog and snoopy for modern stable linux servers
+  include_tasks: linux-rsyslog-snoopy.yml
+  when: ansible_os_family == 'RedHat' or ansible_os_family == 'Debian'
+
+- name: basic sysmon and snoopy on modern windows with choco
+  include_tasks: windows.yml
+  when: ansible_os_family == 'Windows'

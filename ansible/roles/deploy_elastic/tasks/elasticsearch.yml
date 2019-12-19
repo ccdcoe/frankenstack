@@ -1,0 +1,44 @@
+- name: pull elastic image
+  docker_image:
+    name: "{{ elasticsearch_image }}"
+    source: pull
+  retries: 15
+  delay: 2
+  register: result
+  until: not result.failed
+
+- name: Create data volume for elastic
+  docker_volume:
+    name: "data-{{ item.name }}"
+    state: present
+  loop: "{{ elastic_clusters }}"
+  when: item.hostgroup in group_names
+
+- name: Deploy docker containers for elastic
+  docker_container:
+    name: "{{ item.name }}-{{ groups[item.hostgroup].index(inventory_hostname) }}"
+    hostname: "{{ item.name }}-{{ groups[item.hostgroup].index(inventory_hostname) }}"
+    image: "{{ elasticsearch_image }}"
+    volumes:
+      - "data-{{ item.name }}:/usr/share/elasticsearch/data:rw"
+    purge_networks: yes
+    state: started
+    restart_policy: unless-stopped
+    networks:
+      - name: "{{ item.network }}"
+    ulimits:
+      - nofile:262144:262144
+    env:
+      discovery.seed_hosts: "{%set max=groups[item.hostgroup]|length%}{%for i in range(max)%}{{item.name}}-{{i}}{%if i < max-1%},{%endif%}{%endfor%}"
+      cluster.name: "{%if 'cluster_pretty' in item%}{{item.cluster_pretty}}{%else%}{{item.name}}{%endif%}"
+      cluster.initial_master_nodes: "{%set max=groups[item.hostgroup]|length%}{%for i in range(max)%}{{item.name}}-{{i}}{%if i < max-1%},{%endif%}{%endfor%}"
+      node.name: "{{ item.name }}-{{ groups[item.hostgroup].index(inventory_hostname) }}"
+      node.master: "true"
+      node.ingest: "true"
+      node.data: "true"
+      node.attr.datacenter: "{{item.datacenter}}"
+      node.attr.box_type: "{%if 'class' in item%}{{item.class}}{%else%}hot{%endif%}"
+      cluster.routing.allocation.awareness.attributes: datacenter
+      ES_JAVA_OPTS: "-Xms{{item.memory_gb.node}}g -Xmx{{item.memory_gb.node}}g"
+  loop: "{{ elastic_clusters }}"
+  when: item.hostgroup in group_names

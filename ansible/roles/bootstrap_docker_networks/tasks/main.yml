@@ -1,0 +1,9 @@
+- name: Deploy swarm overlay networks
+  run_once: true
+  docker_network:
+    name: "{{ item }}"
+    driver: overlay
+    enable_ipv6: no
+    state: present
+    attachable: yes
+  loop: "{{ docker_networks }}"

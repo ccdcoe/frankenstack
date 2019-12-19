@@ -1,0 +1,70 @@
+---
+- name: Deploying host
+  vmware_guest:
+    hostname: "{{ vcenter.hostname }}"
+    username: "{{ vcenter_access.username }}"
+    password: "{{ vcenter_access.password }}"
+    validate_certs: False
+    wait_for_customization: yes
+    wait_for_ip_address: yes
+    datacenter: "{{ vcenter.datacenter }}"
+    name: "{{ vm_name }}"
+    template: "{{ vcenter.template }}"
+    folder: "{{ vcenter.folder }}"
+    state: poweredon
+    cluster: "{{ vcenter.cluster }}"
+    datastore: "{{ vcenter.datastore }}"
+    resource_pool: "{{ vcenter.resource_pool }}"
+    networks: "{{ vcenter.networks }}"
+    customization:
+      existing_vm: true
+      autologon: True
+      hostname: "{{ inventory_hostname }}"
+      domain: "{{ network.dns.domain }}"
+      dns_servers: "{{ network.dns.servers }}"
+      password: "{{ win_template_access.password }}"
+  register: created_vm
+  until: created_vm.instance.hw_guest_full_name != ""
+  retries: 10
+  delay: 5
+  delegate_to: localhost
+
+- name: Copying post deploy scripts to vm
+  vmware_guest_file_operation:
+    validate_certs: False
+    hostname: "{{ vcenter.hostname }}"
+    username: "{{ vcenter_access.username }}"
+    password: "{{ vcenter_access.password }}"
+    vm_id: "{{ vm_name }}"
+    vm_username: "{{ win_template_access.username }}"
+    vm_password: "{{ win_template_access.password }}"
+    copy:
+      src: "files/{{ item }}"
+      dest: "{{ post_scripts_folder_on_target }}\\{{ item }}"
+      overwrite: True
+  delegate_to: localhost
+  retries: 10
+  delay: 5
+  loop:
+    - "Configure-Time.ps1"
+    - "winrm.ps1"
+
+- name: Executing post-deploy scripts
+  vmware_vm_shell:
+    validate_certs: False
+    hostname: "{{ vcenter.hostname }}"
+    username: "{{ vcenter_access.username }}"
+    password: "{{ vcenter_access.password }}"
+    datacenter: "{{ vcenter.datacenter }}"
+    vm_id: "{{ vm_name }}"
+    vm_username: "{{ win_template_access.username }}"
+    vm_password: "{{ win_template_access.password }}"
+    vm_shell: "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+    vm_shell_args: "{{ post_scripts_folder_on_target }}\\{{ item }}"
+    wait_for_process: True
+  delegate_to: localhost
+  retries: 10
+  delay: 5
+  loop:
+    - "Configure-Time.ps1"
+    - "winrm.ps1"

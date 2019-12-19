@@ -1,0 +1,17 @@
+- name: install core packages
+  package:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - ntp
+    - lvm2
+    - neovim
+    - curl
+    - sudo
+    - parted
+    - xfsprogs
+    - gpg
+    - gpg-agent
+    - python3-docker
+    - jq
+    - rsync

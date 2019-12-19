@@ -1,0 +1,8 @@
+dev_prefix: frankenstack-default-dev
+
+jupyter_image: markuskont/jupyter
+mariadb_image: mariadb
+gogs_image: gogs/gogs
+redis_image: redis
+
+mysql_root_password: superdupersecret

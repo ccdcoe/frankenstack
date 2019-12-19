@@ -1,0 +1,44 @@
+- name: pull kafka image
+  docker_image:
+    name: "{{ kafka_image }}"
+    source: pull
+  retries: 15
+  delay: 2
+  register: result
+  until: not result.failed
+
+- name: "Create data volume for kafka"
+  docker_volume:
+    name: "data-{{ item.name }}"
+    state: present
+  loop: "{{ kafka_clusters }}"
+  when: item.hostgroup in group_names
+
+- name: "Create docker container for kafka"
+  docker_container:
+    name: "{{ item.name }}-{{ groups[item.hostgroup].index(inventory_hostname) }}"
+    hostname: "{{ item.name }}-{{ groups[item.hostgroup].index(inventory_hostname) }}"
+    image: "{{ kafka_image }}"
+    volumes:
+      - "data-{{ item.name }}:/kafka:rw"
+    purge_networks: yes
+    state: started
+    restart_policy: unless-stopped
+    published_ports:
+      - "{{item.expose.port}}:{{item.expose.port}}"
+    networks:
+      - name: "{{ item.network }}"
+    env:
+      KAFKA_BROKER_ID: "{{ groups[item.hostgroup].index(inventory_hostname) }}"
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:29092,OUTSIDE://0.0.0.0:{{item.expose.port}}
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://:29092,OUTSIDE://{{item.expose.host}}:{{item.expose.port}}
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_ZOOKEEPER_CONNECT: "{%for i in range(groups[item.zk.hostgroup]|length)%}{{item.zk.cluster}}-{{i}}{%if i < groups[item.zk.hostgroup]|length - 1%},{%endif%}{%endfor%}"
+      KAFKA_LOG_RETENTION_HOURS: "{{item.data.retention_hours}}"
+      KAFKA_NUM_PARTITIONS: "{{item.data.partitions}}"
+      KAFKA_DEFAULT_REPLICATION_FACTOR: "{{item.data.replicas}}"
+      KAFKA_LOG_RETENTION_BYTES: "{{item.data.retention_bytes}}"
+      KAFKA_LOG_SEGMENT_BYTES: '536870912'
+  loop: "{{ kafka_clusters }}"
+  when: item.hostgroup in group_names

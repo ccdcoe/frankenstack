@@ -1,0 +1,13 @@
+lognorm:
+  - cef.rulebase
+  - stdtypes.rulebase
+  - snoopy.rulebase
+  - named.rulebase
+
+rsyslog_config_templates:
+  - 001-templates
+  - 010-rulesets
+  - 015-inputs
+
+rsyslog_config_static: []
+

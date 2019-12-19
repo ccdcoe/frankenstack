@@ -1,0 +1,164 @@
+---
+host_container_root: /srv/docker-containers
+suricata_image: markuskont/suricata
+suricata_update_image: markuskont/suricata-update
+suricata_shipper_image: markuskont/peek
+
+suricata:
+  name: default-suricata
+  sensor_name: default-suricata
+  kafka:
+    topic: default-suricata
+    brokers: []
+    input_socket_dir: /var/lib/peek
+    input_socket_file: suricata-events.socket
+  interface: ens192
+  rule:
+    sources:
+      - https://rules.emergingthreats.net/open/suricata-5.0/emerging.rules.tar.gz
+    disable: []
+
+suricata_rules:
+  - suricata.rules
+  
+suricata_home_nets:
+  - 10.0.0.0/8
+  - 192.168.0.0/16
+  - fe80::/10
+
+suricata_log_dir: /var/log/suricata
+suricata_socket_dir: /var/run/suricata
+suricata_rule_dir: /var/lib/suricata/rules
+
+suricata_af_packet:
+  - interface: "{{ suricata.interface }}"
+    cluster-id: 99
+    cluster-type: cluster_flow
+    defrag: yes
+  - interface: default
+
+suricata_base_eve_types:
+  - alert:
+      payload: yes             # enable dumping payload in Base64
+      payload-buffer-size: 4kb # max size of payload buffer to output in eve-log
+      payload-printable: yes   # enable dumping payload in printable (lossy) format
+      packet: yes              # enable dumping of packet (without stream segments)
+      metadata: yes            # enable inclusion of app layer metadata with alert. Default yes
+      http-body: yes           # Requires metadata; enable dumping of http body in Base64
+      http-body-printable: yes # Requires metadata; enable dumping of http body in printable format
+      tagged-packets: yes
+  - anomaly:
+      enabled: yes
+      types:
+  - http:
+      extended: yes
+  - dns:
+  - tls:
+      extended: yes
+  - files:
+      force-magic: no
+  - smtp:
+  - dnp3
+  - ftp
+  - rdp
+  - nfs
+  - smb
+  - tftp
+  - ikev2
+  - krb5
+  - snmp
+  - sip
+  - dhcp:
+      enabled: yes
+      extended: no
+  - ssh
+  - stats:
+      totals: yes
+      threads: no
+      deltas: no
+  - flow
+
+suricata_eve_log:
+  - eve-log:
+      enabled: yes
+      filetype: regular
+      filename: eve.json
+      pcap-file: false
+      community-id: true
+      community-id-seed: 0
+      xff:
+        enabled: no
+        mode: extra-data
+        deployment: reverse
+        header: X-Forwarded-For
+      types: "{{ suricata_base_eve_types }}"
+
+suricata_base_outputs:
+  - fast:
+      enabled: no
+      filename: fast.log
+      append: yes
+  - unified2-alert:
+      enabled: no
+  - http-log:
+      enabled: no
+      filename: http.log
+      append: yes
+  - tls-log:
+      enabled: no  # Log TLS connections.
+      filename: tls.log # File to store TLS logs.
+      append: yes
+  - tls-store:
+      enabled: no
+  - pcap-log:
+      enabled: no
+      filename: log.pcap
+      limit: 1000mb
+      max-files: 2000
+      compression: none
+      mode: normal
+      use-stream-depth: no
+      honor-pass-rules: no
+  - alert-debug:
+      enabled: no
+      filename: alert-debug.log
+      append: yes
+  - alert-prelude:
+      enabled: no
+      profile: suricata
+      log-packet-content: no
+      log-packet-header: yes
+  - stats:
+      enabled: yes
+      filename: stats.log
+      append: yes       # append to file (yes) or overwrite it (no)
+      totals: yes       # stats for all threads merged together
+      threads: no       # per thread stats
+  - syslog:
+      enabled: no
+      facility: local5
+  - drop:
+      enabled: no
+  - file-store:
+      version: 2
+      enabled: no
+      xff:
+        enabled: no
+        mode: extra-data
+        deployment: reverse
+        header: X-Forwarded-For
+  - file-store:
+      enabled: no
+  - tcp-data:
+      enabled: no
+      type: file
+      filename: tcp-data.log
+  - http-body-data:
+      enabled: no
+      type: file
+      filename: http-data.log
+  - lua:
+      enabled: no
+      scripts:
+
+suricata_outputs: "{{ suricata_base_outputs +  suricata_eve_log  }}"

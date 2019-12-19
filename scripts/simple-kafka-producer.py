@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 import argparse
+import json
 from kafka import KafkaProducer
-
 
 if __name__ == "__main__":
 
@@ -31,6 +31,6 @@ if __name__ == "__main__":
 
     for i in range(args.count):
         msg = "message %s" % (i)
-        resp = producer.send(args.topic, bytes(msg, encoding='utf-8'))
+        resp = producer.send(args.topic, bytes(json.dumps({"data": msg}), encoding='utf-8'))
 
     producer.close()

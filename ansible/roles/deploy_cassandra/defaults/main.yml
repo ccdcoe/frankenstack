@@ -1,0 +1,8 @@
+---
+cassandra_image: cassandra
+
+cassandra_clusters:
+  - name: default-cass
+    hostgroup: worker
+    network: bridge
+    datacenter: default

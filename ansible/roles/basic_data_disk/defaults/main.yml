@@ -1,0 +1,10 @@
+lv:
+  disk: /dev/sdb
+  node: sdb
+  vg_name: vg.data
+  lv_name: services
+  mount: /srv/
+
+filesystem:
+  type: xfs
+  mount_opts: noatime

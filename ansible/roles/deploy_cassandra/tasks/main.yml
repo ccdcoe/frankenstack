@@ -1,0 +1,39 @@
+---
+- name: pull cassandra image
+  docker_image:
+    name: "{{ cassandra_image }}"
+    source: pull
+  retries: 15
+  delay: 2
+  register: result
+  until: not result.failed
+
+- name: Create data volume for cassandra
+  docker_volume:
+    name: "data-{{ item.name }}"
+    state: present
+  loop: "{{ cassandra_clusters }}"
+  when: item.hostgroup in group_names
+
+- name: Deploy docker containers for cassandra
+  docker_container:
+    name: "{{ item.name }}-{{ groups[item.hostgroup].index(inventory_hostname) }}"
+    hostname: "{{ item.name }}-{{ groups[item.hostgroup].index(inventory_hostname) }}"
+    image: "{{ cassandra_image }}"
+    volumes:
+      - "data-{{ item.name }}:/var/lib/cassandra:rw"
+    purge_networks: yes
+    state: started
+    restart_policy: unless-stopped
+    networks:
+      - name: "{{ item.network }}"
+    security_opts:
+      - seccomp:unconfined
+    env:
+      CASSANDRA_CLUSTER_NAME: "{{item.name}}"
+      CASSANDRA_SEEDS: "{%set max=groups[item.hostgroup]|length%}{%for i in range(max)%}{{item.name}}-{{i}}{%if i < max-1%},{%endif%}{%endfor%}"
+      CASSANDRA_ENDPOINT_SNITCH: GossipingPropertyFileSnitch
+      CASSANDRA_DC: "{{item.datacenter}}"
+
+  loop: "{{ cassandra_clusters }}"
+  when: item.hostgroup in group_names

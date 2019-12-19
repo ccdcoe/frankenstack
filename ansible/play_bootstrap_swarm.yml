@@ -1,0 +1,87 @@
+---
+- name: Ensure that physical cruncher machines are not part of any swarm
+  hosts: cruncher
+
+  tasks:
+    - name: Ensure that crunchers have python docker deps installed
+      pip:
+        name: docker
+        extra_args: --user --upgrade
+
+    - name: Remove a swarm manager
+      docker_swarm:
+        state: absent
+        force: true
+
+- name: Initialize docker swarm with managers and physical servers as master/manager nodes
+  hosts: swarm_manager
+
+  vars_files:
+    - private_vars/lab.yml
+
+  vars:
+    manager_group: swarm_manager
+
+  tasks:
+    - name: dicover advertise IP list
+      set_fact:
+        advertise_ip: "{{ ansible_all_ipv4_addresses | ipaddr(network.sinet.ipv4) | flatten | min }}"
+
+    - name: Initialize empty list of managers
+      set_fact:
+        managers: []
+      run_once: true
+      when: groups[manager_group].index(inventory_hostname) == 0
+
+    - name: Append to a list of managers after init
+      set_fact:
+        managers: "{{managers + [advertise_ip]}}"
+      run_once: true
+      when: groups[manager_group].index(inventory_hostname) == 0
+
+    - name: Initialize swarm on one manager
+      run_once: true
+      docker_swarm:
+        state: present
+        advertise_addr: "{{advertise_ip}}"
+      when: groups[manager_group].index(inventory_hostname) == 0
+      register: swarm
+
+    - name: Store worker token for next step
+      set_fact:
+        swarm_facts: "{{swarm.swarm_facts}}"
+
+    - name: Add swarm managers
+      docker_swarm:
+        state: join
+        advertise_addr: "{{advertise_ip}}"
+        join_token: "{{swarm.swarm_facts.JoinTokens.Manager}}"
+        remote_addrs: "{{managers}}"
+
+    - name: Append to a list of managers after manager join to existing cluster
+      set_fact:
+        managers: "{{managers + [advertise_ip]}}"
+      when: groups[manager_group].index(inventory_hostname) != 0
+
+- name: Join other nodes as members
+  hosts: swarm_nodes
+
+  vars_files:
+    - private_vars/lab.yml
+
+  vars:
+    manager_group: swarm_manager
+    managers: "{{ groups[manager_group] | map('extract', hostvars, ['ansible_facts', 'all_ipv4_addresses']) | ipaddr(network.sinet.ipv4) | list | flatten }}"
+    token: "{{ groups[manager_group] | map('extract', hostvars, ['swarm_facts', 'JoinTokens', 'Worker'] ) | list | unique | min }}"
+
+  tasks:
+    - name: dicover advertise IP list
+      set_fact:
+        advertise_ip: "{{ ansible_all_ipv4_addresses | ipaddr(network.sinet.ipv4) | flatten | min }}"
+
+    - name: Add swarm workers
+      docker_swarm:
+        state: join
+        advertise_addr: "{{advertise_ip}}"
+        join_token: "{{token}}"
+        remote_addrs: "{{managers}}"

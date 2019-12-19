@@ -1,0 +1,67 @@
+- name: Create host folders for rsyslog configs and normalization rules
+  file:
+    path: "{{ host_container_root }}/{{ item }}"
+    state: directory
+    mode: 0750
+  loop:
+    - "{{ logserver.name }}"
+    - "{{ logserver.name }}/config.d"
+    - "{{ logserver.name }}/lognorm"
+
+- name: pull custom rsyslog image
+  docker_image:
+    name: "{{ rsyslog_image }}"
+    source: pull
+  retries: 15
+  delay: 2
+  register: result
+  until: not result.failed
+
+- name: Create a volume for rsyslog data
+  docker_volume:
+    name: "data-{{ logserver.name }}"
+
+- name: Run container for rsyslog
+  docker_container:
+    name: "{{ logserver.name }}"
+    image: "{{ rsyslog_image }}"
+    state: started
+    network_mode: host
+    restart_policy: unless-stopped
+    env:
+      LIBLOGNORM_RULEBASES: "/etc/lognorm"
+    volumes:
+      - "{{ host_container_root }}/{{ logserver.name }}/config.d:/etc/rsyslog.d:ro"
+      - "{{ host_container_root }}/{{ logserver.name }}/lognorm:/etc/lognorm:ro"
+      - "data-{{ logserver.name }}:/var/log:rw"
+
+- name: Deploy liblognorm rules
+  copy:
+    src: "{{ item }}"
+    dest: "{{ host_container_root }}/{{ logserver.name }}/lognorm/{{ item }}"
+    mode: 0644
+  loop: "{{ lognorm }}"
+  notify: 
+    - restart rsyslog server
+
+- name: Deploy additional configs from static files
+  copy:
+    src: "{{ item }}.j2"
+    dest: "{{ host_container_root }}/{{ logserver.name }}/config.d/{{ item }}.conf"
+    mode: 0644
+  loop: "{{ rsyslog_config_static }}"
+  notify: 
+    - restart rsyslog server
+
+- name: Deploy additional configs from templates
+  template:
+    src: "{{ item }}.j2"
+    dest: "{{ host_container_root }}/{{ logserver.name }}/config.d/{{ item }}.conf"
+    mode: 0644
+  loop: "{{ rsyslog_config_templates }}"
+  notify: 
+    - restart rsyslog server
+
+- name: validate rsyslog config
+  shell: "docker run --rm -v {{ host_container_root }}/{{ logserver.name }}/config.d:/etc/rsyslog.d:ro -v {{ host_container_root }}/{{ logserver.name }}/lognorm:/etc/lognorm:ro -e 'LIBLOGNORM_RULEBASES=/etc/lognorm' markuskont/rsyslog -N 1"
+  register: result

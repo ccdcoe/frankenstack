@@ -1,0 +1,4 @@
+---
+- name: Deploy docker monitoring if needed
+  include_tasks: telegraf-docker.yml
+  when: docker_hostgroup in group_names 

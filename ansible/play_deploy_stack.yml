@@ -1,0 +1,134 @@
+---
+- name: Ensure overlay networks
+  hosts: manager
+  gather_facts: true
+
+  vars_files:
+    - private_vars/lab.yml
+    - vars/bootstrap_frankenstack_vars.yml
+
+  roles:
+    - bootstrap_docker_networks
+
+- name: Clean up temporary container hacks
+  hosts: swarm
+  gather_facts: true
+
+  vars_files:
+    - private_vars/lab.yml
+    - vars/bootstrap_frankenstack_vars.yml
+
+  tasks:
+    - name: "Remove dummy for network"
+      docker_container:
+        name: dummy-{{ item }}
+        state: absent
+      loop: "{{ docker_networks }}"
+
+    - name: "Spawn dummy container to extend overlay network to worker"
+      shell: "docker run -ti -d --name dummy-{{ item }} --restart=always --network {{ item }} nginx"
+      loop: "{{ docker_networks }}"
+
+- name: Set up event collectors
+  hosts: collector
+  gather_facts: true
+
+  vars_files:
+    - private_vars/lab.yml
+    - vars/bootstrap_logserver.yml
+
+  roles:
+    - deploy_event_collector
+
+- name: Set up proxy
+  hosts: frontend
+  gather_facts: true
+
+  vars_files:
+    - private_vars/lab.yml
+    - vars/bootstrap_frankenstack_vars.yml
+    - vars/bootstrap_proxy.yml
+
+  roles:
+    - deploy_proxy
+
+- name: Set up devel support services
+  hosts: cruncher
+  gather_facts: true
+
+  vars_files:
+    - private_vars/lab.yml
+    - vars/bootstrap_frankenstack_vars.yml
+
+  roles:
+    - deploy_dev_server
+
+- name: set up messaging services
+  hosts: mq
+  gather_facts: true
+
+  vars_files:
+    - private_vars/lab.yml
+    - vars/bootstrap_frankenstack_vars.yml
+
+  roles:
+    - deploy_zookeeper
+    - deploy_kafka
+    - deploy_redis
+
+- name: set up storage and query stuff
+  hosts: db
+  gather_facts: true
+
+  vars_files:
+    - private_vars/lab.yml
+    - vars/bootstrap_frankenstack_vars.yml
+
+  roles:
+    - deploy_elastic
+    - deploy_cassandra
+    - deploy_metrix
+
+- name: set up node monitoring
+  hosts: vm
+  gather_facts: true
+
+  vars_files:
+    - private_vars/lab.yml
+    - vars/bootstrap_frankenstack_vars.yml
+
+  roles:
+    - deploy_mon_metrix
+    - deploy_mon_logs
+
+- name: set up packet capture
+  hosts: pcap
+  gather_facts: true
+
+  vars_files:
+    - private_vars/lab.yml
+    - private_vars/networks.yml
+    - private_vars/owl.yml
+    - private_vars/meerkat.yml
+
+    - vars/bootstrap_frankenstack_vars.yml
+    - vars/bootstrap_nsm.yml
+
+  roles:
+    - deploy_nsm_suricata
+    - deploy_nsm_moloch
+
+- name: Clean up temporary container hacks
+  hosts: swarm
+  gather_facts: true
+
+  vars_files:
+    - private_vars/lab.yml
+    - vars/bootstrap_frankenstack_vars.yml
+
+  tasks:
+    - name: "Remove dummy for overlay network "
+      docker_container:
+        name: dummy-{{ item }}
+        state: absent
+      loop: "{{ docker_networks }}"

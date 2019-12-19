@@ -1,0 +1,126 @@
+---
+proxy:
+  static_resources:
+    listeners:
+    - name: main
+      address:
+        socket_address: { address: 0.0.0.0, port_value: 80 }
+      filter_chains:
+      - filters:
+        - name: envoy.http_connection_manager
+          config:
+            upgrade_configs:
+            - upgrade_type: websocket
+            stat_prefix: proxy
+            route_config:
+              name: frankenstack
+              virtual_hosts:
+              - name: kibana_logs
+                domains:
+                - "kibana.{{exercise_domain}}"
+                - "logs.kibana.{{exercise_domain}}"
+                routes:
+                - match: { prefix: "/" }
+                  route: { cluster: service_kibana_logs }
+              - name: elastic_logs
+                domains:
+                - "ela.{{exercise_domain}}"
+                - "elasic.{{exercise_domain}}"
+                - "logs.elastic.{{exercise_domain}}"
+                routes:
+                - match: { prefix: "/" }
+                  route: { cluster: service_elastic_logs }
+              - name: elastic_moloch
+                domains:
+                - "moloch.elastic.{{exercise_domain}}"
+                routes:
+                - match: { prefix: "/" }
+                  route: { cluster: service_elastic_moloch }
+              - name: moloch
+                domains:
+                - "owl.{{exercise_domain}}"
+                - "molo.{{exercise_domain}}"
+                - "moloch.{{exercise_domain}}"
+                routes:
+                - match: { prefix: "/" }
+                  route: { cluster: service_moloch }
+              - name: notebooks
+                domains:
+                - "notebooks.{{exercise_domain}}"
+                - "nb.{{exercise_domain}}"
+                routes:
+                - match: { prefix: "/" }
+                  route: { cluster: service_notebooks }
+              - name: gogs
+                domains:
+                - "gogs.{{exercise_domain}}"
+                - "git.{{exercise_domain}}"
+                routes:
+                - match: { prefix: "/" }
+                  route: { cluster: service_gogs }
+              - name: wise
+                domains:
+                - "wise.{{exercise_domain}}"
+                routes:
+                - match: { prefix: "/" }
+                  route: { cluster: service_wise }
+            http_filters:
+            - name: envoy.router
+
+    clusters:
+    - name: service_kibana_logs
+      type: strict_dns
+      dns_lookup_family: V4_ONLY
+      connect_timeout: 0.25s
+      hosts:
+      - socket_address: { address: "xs20-yt-elastic-logs-kibana-0", port_value: 5601 }
+      - socket_address: { address: "xs20-yt-elastic-logs-kibana-1", port_value: 5601 }
+      - socket_address: { address: "xs20-yt-elastic-logs-kibana-2", port_value: 5601 }
+    - name: service_moloch_logs
+      type: strict_dns
+      dns_lookup_family: V4_ONLY
+      connect_timeout: 0.25s
+      hosts:
+      - socket_address: { address: "xs20-yt-elastic-moloch-logs-0", port_value: 5601 }
+      - socket_address: { address: "xs20-yt-elastic-moloch-logs-1", port_value: 5601 }
+      - socket_address: { address: "xs20-yt-elastic-moloch-logs-2", port_value: 5601 }
+    - name: service_elastic_logs
+      type: strict_dns
+      dns_lookup_family: V4_ONLY
+      connect_timeout: 0.25s
+      hosts:
+      - socket_address: { address: "xs20-yt-elastic-logs-0", port_value: 9200 }
+      - socket_address: { address: "xs20-yt-elastic-logs-1", port_value: 9200 }
+      - socket_address: { address: "xs20-yt-elastic-logs-2", port_value: 9200 }
+    - name: service_elastic_moloch
+      type: strict_dns
+      dns_lookup_family: V4_ONLY
+      connect_timeout: 0.25s
+      hosts:
+      - socket_address: { address: "xs20-yt-elastic-moloch-0", port_value: 9200 }
+      - socket_address: { address: "xs20-yt-elastic-moloch-1", port_value: 9200 }
+      - socket_address: { address: "xs20-yt-elastic-moloch-2", port_value: 9200 }
+    - name: service_gogs
+      type: strict_dns
+      dns_lookup_family: V4_ONLY
+      connect_timeout: 0.25s
+      hosts:
+      - socket_address: { address: "xs20-yt-devel-kolka-gogs-git-server", port_value: 3000 }
+    - name: service_notebooks
+      type: strict_dns
+      dns_lookup_family: V4_ONLY
+      connect_timeout: 0.25s
+      hosts:
+      - socket_address: { address: "xs20-yt-devel-kolka-jupyter-notebooks", port_value: 8888 }
+    - name: service_moloch
+      type: strict_dns
+      dns_lookup_family: V4_ONLY
+      connect_timeout: 0.25s
+      hosts:
+      - socket_address: { address: "xs20-yt-owl-viewer", port_value: 8005 }
+    - name: service_wise
+      type: strict_dns
+      dns_lookup_family: V4_ONLY
+      connect_timeout: 0.25s
+      hosts:
+      - socket_address: { address: "xs20-yt-owl-wise", port_value: 8081 }

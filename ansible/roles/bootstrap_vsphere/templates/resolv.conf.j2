@@ -1,0 +1,13 @@
+{% if "domain" in network.dns %}
+domain {{ network.dns.domain }}
+{% endif %}
+{% if "search" in network.dns %}
+search {% for searchpath in network.dns.search %}{{ searchpath }}{% endfor %}
+{% endif %}
+
+{% for address in network.dns.servers %}
+nameserver {{ address }}
+{% endfor %}
+{% if "options" in network.dns %}
+options {{ network.dns.options }}
+{% endif %}

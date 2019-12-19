@@ -1,0 +1,2 @@
+- name: collect SSH keys via local connection to avoid issues later with non-local
+  shell: "ssh-keyscan -H {{ inventory_hostname }} >> ~/.ssh/known_hosts"

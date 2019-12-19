@@ -66,6 +66,12 @@ if __name__ == "__main__":
             default=False,
             help="Disable JSON decode.")
 
+    parser.add_argument("--print-key",
+            dest="printkey",
+            action="store_true",
+            default=False,
+            help="Print key instead of kafka message.")
+
     parser.add_argument("--kafka-meta",
             dest="kafkameta",
             action="store_true",
@@ -75,8 +81,7 @@ if __name__ == "__main__":
     parser.add_argument("--consume-key",
             dest="consumeKey",
             default=None,
-            help="Only return messages where kafka key equals value. By default, all messages will be returned."
-            )
+            help="Only return messages where kafka key equals value. By default, all messages will be returned.")
 
     parser.add_argument("--timeout",
             dest="timeout",
@@ -109,17 +114,25 @@ if __name__ == "__main__":
         try:
             for msg in consumer:
                 key = msg.key.decode("utf-8") if msg.key else None
+                if args.printkey:
+                    print(key)
+                    continue
+
                 d = msg.value.decode("utf-8")
                 process = True if (key and args.consumeKey and args.consumeKey == key) or (not args.consumeKey) else False
                 if process:
                     if not args.nodecode:
-                        d = json.loads(d)
                         if args.kafkameta:
                             d["kafka"] = {}
                             d["kafka"]["timestamp"] = msg.timestamp
                             d["kafka"]["partition"] = msg.partition
                             d["kafka"]["offset"] = msg.offset
                             d["kafka"]["key"] = key
+                        try:
+                            d = json.loads(d)
+                            print(json.dumps(d))
+                        except Exception as e:
+                            print("NOT JSON:", d)
                         print(json.dumps(d))
                         data["consumed"] += 1
                     else:

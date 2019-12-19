@@ -1,0 +1,44 @@
+- name: pull zookeeper image
+  docker_image:
+    name: "{{ zookeeper_image }}"
+    source: pull
+  retries: 15
+  delay: 2
+  register: result
+  until: not result.failed
+
+- name: Create data volume for zookeeper
+  docker_volume:
+    name: "data-{{ item.name }}"
+    state: present
+  loop: "{{ zookeeper_clusters }}"
+  when: item.hostgroup in group_names
+
+- name: Create WAL volume for zookeeper
+  docker_volume:
+    name: "wal-{{ item.name }}"
+    state: present
+  loop: "{{ zookeeper_clusters }}"
+  when: item.hostgroup in group_names
+
+- name: Deploy docker containers for zookeeper
+  docker_container:
+    name: "{{ item.name }}-{{ groups[item.hostgroup].index(inventory_hostname) }}"
+    hostname: "{{ item.name }}-{{ groups[item.hostgroup].index(inventory_hostname) }}"
+    image: "{{ zookeeper_image }}"
+    published_ports: "{{item.expose}}"
+    volumes:
+      - "data-{{ item.name }}:/data:rw"
+      - "wal-{{ item.name }}:/datalog:rw"
+    purge_networks: yes
+    state: started
+    restart_policy: unless-stopped
+    networks:
+      - name: "{{ item.network }}"
+    env:
+      ZOO_ADMINSERVER_ENABLED: "false"
+      ZOO_4LW_COMMANDS_WHITELIST: "stat,srvr"
+      ZOO_MY_ID: "{{ groups[item.hostgroup].index(inventory_hostname) }}"
+      ZOO_SERVERS: "{% for i in range(groups[item.hostgroup] | length) %} server.{{ i }}={{item.name}}-{{ i }}:2888:38888;2181 {% endfor %}"
+  loop: "{{ zookeeper_clusters }}"
+  when: item.hostgroup in group_names

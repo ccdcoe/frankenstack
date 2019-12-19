@@ -1,0 +1,20 @@
+{% if 'udp' in logserver.listeners %}
+module(load="imudp") # needs to be done just once
+{% for port in logserver.listeners.udp %}
+input(type="imudp" port="{{port.port}}" {%- if 'ruleset' in port -%} ruleset="{{port.ruleset}}"{%-endif-%})
+{% endfor %}
+{% endif %}
+
+{% if 'tcp' in logserver.listeners %}
+module(load="imtcp") # needs to be done just once
+{% for port in logserver.listeners.tcp %}
+input(type="imtcp" port="{{port.port}}" {%- if 'ruleset' in port %} ruleset="{{port.ruleset}}"{%-endif%})
+{% endfor %}
+{% endif %}
+
+{% if 'kafka' in logserver.listeners %}
+module(load="imkafka") # needs to be done just once
+{% for consumer in logserver.listeners.kafka %}
+input(type="imkafka" broker=["{{consumer.brokers|join("\",\"") }}"] topic="{{consumer.topic}}" {%- if 'ruleset' in consumer %} ruleset="{{consumer.ruleset}}"{%-endif%} consumerGroup="{%if 'group' in consumer%}{{consumer.group}}{%else%}rsyslog-{{inventory_hostname}}{%endif%}")
+{% endfor %}
+{% endif %}

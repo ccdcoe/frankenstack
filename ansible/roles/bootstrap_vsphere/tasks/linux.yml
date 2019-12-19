@@ -1,0 +1,86 @@
+---
+- name: Clone templates to new VMs
+  register: created_vm
+  vmware_guest:
+    hostname: "{{ vcenter.hostname }}"
+    username: "{{ vcenter_access.username }}"
+    password: "{{ vcenter_access.password }}"
+    validate_certs: False
+    wait_for_customization: no
+    wait_for_ip_address: no
+    datacenter: "{{ vcenter.datacenter }}"
+    name: "{{ vm_name }}"
+    template: "{{ vcenter.template }}"
+    folder: "{{ vcenter.folder }}"
+    state: poweredon
+    cluster: "{{ vcenter.cluster }}"
+    datastore: "{{ vcenter.datastore }}"
+    networks: "{{ vcenter.networks }}"
+    resource_pool: "{{ vcenter.resource_pool }}"
+    convert: "thin"
+
+    customization:
+      existing_vm: true
+      hostname: "{{ inventory_hostname }}"
+
+    disk: "{{ vcenter.disk }}"
+    hardware: "{{ vcenter.hardware }}"
+  until: created_vm.instance.hw_guest_full_name != ""
+  retries: 10
+  delay: 5
+  delegate_to: localhost
+
+- name: Wait for machine to be up
+  vmware_guest_tools_wait:
+    hostname: "{{ vcenter.hostname }}"
+    username: "{{ vcenter_access.username }}"
+    password: "{{ vcenter_access.password }}"
+    validate_certs: False
+    uuid: "{{ created_vm.instance.hw_product_uuid }}"
+  register: facts
+  retries: 10
+  delay: 5
+  delegate_to: localhost
+
+- name: Set vmware tools connection
+  set_fact:
+    ansible_connection: vmware_tools
+    ansible_vmware_host: "{{ vcenter.hostname }}"
+    ansible_vmware_user: "{{ vcenter_access.username }}"
+    ansible_vmware_password: "{{ vcenter_access.password }}"
+    ansible_vmware_validate_certs: no
+    ansible_vmware_guest_path: "{{ vcenter.datacenter }}/vm/{{ vcenter.folder }}/{{ vm_name }}"
+    ansible_vmware_tools_user: "{{ template_access.username }}"
+    ansible_vmware_tools_password: "{{ template_access.password }}"
+  retries: 10
+  delay: 5
+  delegate_to: localhost
+
+- name: Choose correct remote interpreter
+  set_fact:
+    ansible_python_interpreter: "/usr/bin/python3"
+  delegate_to: "{{ inventory_hostname }}"
+  delegate_facts: True
+
+- pause:
+    seconds: 10
+
+# Debian template
+- name: Upload network interfaces template
+  template:
+    src: interfaces.j2
+    dest: /etc/network/interfaces
+  retries: 15
+  delay: 2
+
+- name: Populate resolv.conf
+  template:
+    src: resolv.conf.j2
+    dest: /etc/resolv.conf
+  retries: 15
+  delay: 2
+
+- name: Apply new settings
+  service:
+    name: networking
+    state: restarted

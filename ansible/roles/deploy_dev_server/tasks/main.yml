@@ -1,0 +1,81 @@
+---
+- name: pull custom images
+  docker_image:
+    name: "{{ item }}"
+    source: pull
+    force_source: yes
+  retries: 15
+  delay: 2
+  register: result
+  until: not result.failed
+  loop:
+    - "{{ jupyter_image }}"
+    - "{{ gogs_image }}"
+    - "{{ mariadb_image }}"
+    - "{{ redis_image }}"
+
+# Create volumes
+- name: Create volumes for jupyter
+  docker_volume:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - "{{ dev_prefix }}-notebooks"
+    - "{{ dev_prefix }}-pickles"
+    - "{{ dev_prefix }}-dumps"
+
+- name: Create volumes for gogs
+  docker_volume:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - "{{ dev_prefix }}-gogs"
+
+- name: Create volumes for mariadb
+  docker_volume:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - "{{ dev_prefix }}-mariadb"
+
+- set_fact:
+    dev_containers:
+    - name: "{{ dev_prefix }}-gogs-git-server"
+      image: "{{ gogs_image }}"
+      vol:
+        - "{{ dev_prefix }}-gogs:/data/:rw"
+    - name: "{{ dev_prefix }}-mariadb-storage"
+      image: "{{ mariadb_image }}"
+      env:
+        MYSQL_ROOT_PASSWORD: "{{ mysql_root_password }}"
+      vol:
+        - "{{ dev_prefix }}-mariadb:/var/lib/mysql:rw"
+    - name: "{{ dev_prefix }}-jupyter-notebooks"
+      image: "{{jupyter_image}}"
+      vol:
+      - "{{ dev_prefix }}-notebooks:/data/notebooks"
+      - "{{ dev_prefix }}-pickles:/data/pickles"
+      - "{{ dev_prefix }}-dumps:/data/dump"
+    - name: "{{ dev_prefix }}-redis-cache"
+      image: "{{ redis_image }}"
+
+# Run containers
+- name: Run containers
+  docker_container:
+    name: "{{ item.name }}"
+    hostname: "{{ item.name }}"
+    image: "{{ item.image }}"
+    state: started
+    restart_policy: unless-stopped
+    purge_networks: yes
+    env: "{{ item.env | default({}) }}"
+    volumes: "{{item.vol | default([]) }}"
+  loop: "{{ dev_containers }}"
+
+- name: Turn dev systems into octopus that has access to all networks
+  docker_network:
+    name: "{{ item }}"
+    driver: overlay
+    connected: "{{ dev_containers | map(attribute='name') | list }}"
+    appends: yes
+  loop: "{{ docker_networks }}"

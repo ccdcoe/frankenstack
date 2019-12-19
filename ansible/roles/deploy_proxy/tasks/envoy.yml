@@ -1,0 +1,35 @@
+---
+- name: Create host folders for static config
+  file:
+    path: "{{ host_container_root }}/envoy"
+    state: directory
+    mode: 0755
+
+- name: Create static config file
+  template:
+    src: config.j2
+    dest: "{{ host_container_root }}/envoy/envoy.yaml"
+
+- name: Deploy docker container for envoy proxy
+  docker_container:
+    name: "{{ envoy_prefix }}proxy"
+    hostname: "{{ envoy_prefix }}proxy"
+    image: "{{ envoy_image }}"
+    purge_networks: yes
+    state: started
+    restart_policy: unless-stopped
+    published_ports:
+      - 80:80/tcp
+      - 443:443/tcp
+    volumes:
+      - "{{ host_container_root }}/envoy/envoy.yaml:/etc/envoy/envoy.yaml:ro"
+
+- name: Turn proxy into octopus that has access to all networks
+  docker_network:
+    name: "{{item}}"
+    driver: overlay
+    connected:
+      - "{{envoy_prefix}}proxy"
+    appends: yes
+  loop: "{{docker_networks}}"
+  notify: restart envoy

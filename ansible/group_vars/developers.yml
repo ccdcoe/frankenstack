@@ -1,0 +1,19 @@
+---
+vm_disks:
+  - size_gb: 30
+    type: thin
+    datastore: "{{ vm_datastore }}"
+  - size_gb: 200
+    type: thin
+    datastore: "{{ vm_datastore }}"
+
+vm_hardware:
+  memory_mb: 8192
+  num_cpus: 4
+
+lv:
+  disk: /dev/sdb
+  node: sdb
+  vg_name: vg.data
+  lv_name: services
+  mount: /srv/pool-0

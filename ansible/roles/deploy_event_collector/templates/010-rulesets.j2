@@ -1,0 +1,466 @@
+#jinja2: trim_blocks:False
+module(load="mmnormalize")
+module(load="mmjsonparse")
+module(load="omkafka")
+module(load="omelasticsearch")
+module(load="mmrm1stspace")
+
+template(name="imkafka-proto23" type="string" string="<%PRI%>1 %TIMESTAMP:::date-rfc3339% imkafka imkafka %PROCID% %MSGID% %STRUCTURED-DATA% %msg%\n")
+template(
+  name="syslog-json-fileformat"
+  type="list"
+  option.json="on") {
+    constant(value="{")
+    constant(value="\"@timestamp\":\"")                 property(name="timegenerated" dateFormat="rfc3339")
+    constant(value="\",\"@reported\":\"")               property(name="timereported"  dateFormat="rfc3339")
+    constant(value="\",\"syslog_message\":\"")          property(name="msg")
+    constant(value="\",\"syslog_host\":\"")             property(name="hostname")
+    constant(value="\",\"syslog_severity\":\"")         property(name="syslogseverity-text")
+    constant(value="\",\"syslog_facility\":\"")         property(name="syslogfacility-text")
+    constant(value="\",\"syslog_tag\":\"")              property(name="syslogtag")
+    constant(value="\",\"syslog_program\":\"")          property(name="programname")
+    constant(value="\",\"syslog_ip\":\"")               property(name="fromhost-ip")
+    constant(value="\"}\n")
+}
+template(
+  name="syslog-json"
+  type="list"
+  option.json="on") {
+    constant(value="{")
+    constant(value="\"@timestamp\":\"")                 property(name="timegenerated" dateFormat="rfc3339")
+    constant(value="\",\"@reported\":\"")               property(name="timereported"  dateFormat="rfc3339")
+    constant(value="\",\"syslog_message\":\"")          property(name="msg")
+    constant(value="\",\"syslog_host\":\"")             property(name="hostname")
+    constant(value="\",\"syslog_severity\":\"")         property(name="syslogseverity-text")
+    constant(value="\",\"syslog_facility\":\"")         property(name="syslogfacility-text")
+    constant(value="\",\"syslog_tag\":\"")              property(name="syslogtag")
+    constant(value="\",\"syslog_program\":\"")          property(name="programname")
+    constant(value="\",\"syslog_ip\":\"")               property(name="fromhost-ip")
+    constant(value="\"}")
+}
+template(
+  name="syslog-normalized" 
+  type="list") {
+    constant(value="{\"@timestamp\":\"")                property(name="timegenerated" dateFormat="rfc3339")
+    constant(value="\",\"syslog_host\":\"")             property(name="hostname")
+    constant(value="\",\"syslog_severity\":\"")         property(name="syslogseverity-text")
+    constant(value="\",\"syslog_facility\":\"")         property(name="syslogfacility-text")
+    constant(value="\",\"syslog_program\":\"")          property(name="programname")
+    constant(value="\",\"syslog_ip\":\"")               property(name="fromhost-ip")
+    constant(value="\",")                               property(name="$!all-json"    position.from="3")
+}
+template(
+  name="syslog-normalized-file" 
+  type="list") {
+    constant(value="{\"@timestamp\":\"")                property(name="timegenerated" dateFormat="rfc3339")
+    constant(value="\",\"syslog_host\":\"")             property(name="hostname")
+    constant(value="\",\"syslog_severity\":\"")         property(name="syslogseverity-text")
+    constant(value="\",\"syslog_facility\":\"")         property(name="syslogfacility-text")
+    constant(value="\",\"syslog_program\":\"")          property(name="programname")
+    constant(value="\",\"syslog_ip\":\"")               property(name="fromhost-ip")
+    constant(value="\",")                               property(name="$!all-json"    position.from="3")
+    constant(value="\n")
+}
+
+{%- for ruleset in logserver.rulesets %}
+# BEGIN RULESET {{ruleset.name}}
+template(
+  name="{{ruleset.name}}-local-unstruct"
+  type="list") {
+  constant(value="/var/log/{{ruleset.name}}/syslog/")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="1" position.to="4")
+  constant(value=".")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="6" position.to="7")
+  constant(value=".")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="9" position.to="10")
+  {%- if 'hourly' in ruleset and ruleset.hourly %}
+  constant(value=".")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="12" position.to="13")
+  {%- endif %}
+}
+template(
+  name="{{ruleset.name}}-local-byhost-parse-fail"
+  type="list") {
+  constant(value="/var/log/{{ruleset.name}}/cee-parse-fail/")
+  property(name="hostname")
+  constant(value="/")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="1" position.to="4")
+  constant(value=".")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="6" position.to="7")
+  constant(value=".")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="9" position.to="10")
+  {%- if 'hourly' in ruleset and ruleset.hourly %}
+  constant(value=".")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="12" position.to="13")
+  {%- endif %}
+}
+template(
+  name="{{ruleset.name}}-local-json"
+  type="list") {
+  constant(value="/var/log/{{ruleset.name}}/json/")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="1" position.to="4")
+  constant(value=".")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="6" position.to="7")
+  constant(value=".")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="9" position.to="10")
+  {%- if 'hourly' in ruleset and ruleset.hourly %}
+  constant(value=".")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="12" position.to="13")
+  {%- endif %}
+}
+{%- if 'byhost' in ruleset %}
+template(
+  name="{{ruleset.name}}-local-byhost"
+  type="list") {
+  constant(value="/var/log/{{ruleset.name}}/hosts/")
+  property(name="hostname")
+  constant(value="/")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="1" position.to="4")
+  constant(value=".")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="6" position.to="7")
+  constant(value=".")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="9" position.to="10")
+  {%- if 'hourly' in ruleset and ruleset.hourly %}
+  constant(value=".")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="12" position.to="13")
+  {%- endif %}
+}
+{%- endif %}
+{%- if 'bySrcIP' in ruleset %}
+template(
+  name="{{ruleset.name}}-local-bysrcip"
+  type="list") {
+  constant(value="/var/log/{{ruleset.name}}/fromhost-ip/")
+  property(name="fromhost-ip")
+  constant(value="/")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="1" position.to="4")
+  constant(value=".")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="6" position.to="7")
+  constant(value=".")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="9" position.to="10")
+  {%- if 'hourly' in ruleset and ruleset.hourly %}
+  constant(value=".")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="12" position.to="13")
+  {%- endif %}
+}
+{%- endif %}
+
+{%- if 'elastic' in ruleset and 'enabled' in ruleset.elastic and ruleset.elastic.enabled%}
+template(
+  name="{{ruleset.name}}-elastic"
+  type="list") {
+  constant(value="{{ruleset.elastic.indexBase}}-")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="1" position.to="4")
+  constant(value=".")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="6" position.to="7")
+  constant(value=".")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="9" position.to="10")
+  {%- if 'hourly' in ruleset and ruleset.hourly %}
+  constant(value=".")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="12" position.to="13")
+  {%- endif %}
+}
+{%- endif %}
+
+{%- if 'sort' in ruleset %}
+{%- for sort in ruleset.sort %}
+template(
+  name="{{ruleset.name}}-local-filter-{{sort.name}}"
+  type="list") {
+  constant(value="/var/log/{{ruleset.name}}/filter/{{sort.name}}/")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="1" position.to="4")
+  constant(value=".")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="6" position.to="7")
+  constant(value=".")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="9" position.to="10")
+  {%- if 'hourly' in ruleset and ruleset.hourly %}
+  constant(value=".")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="12" position.to="13")
+  {%- endif %}
+}
+{%- if 'elaIndex' in sort %}
+template(
+  name="{{ruleset.name}}-{{sort.name}}-elastic"
+  type="list") {
+  constant(value="{{sort.elaIndex}}-")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="1" position.to="4")
+  constant(value=".")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="6" position.to="7")
+  constant(value=".")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="9" position.to="10")
+  {%- if 'hourly' in ruleset and ruleset.hourly %}
+  constant(value=".")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="12" position.to="13")
+  {%- endif %}
+}
+{%- endif %}
+{%- endfor %}
+{%- endif %}
+{%- if 'normalize' in ruleset %}
+{%- for norm in ruleset.normalize %}
+template(
+  name="{{ruleset.name}}-local-normalized-{{norm.name}}"
+  type="list") {
+  constant(value="/var/log/{{ruleset.name}}/normalize/{{norm.name}}/")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="1" position.to="4")
+  constant(value=".")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="6" position.to="7")
+  constant(value=".")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="9" position.to="10")
+  {%- if 'hourly' in ruleset and ruleset.hourly %}
+  constant(value=".")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="12" position.to="13")
+  {%- endif %}
+}
+{%- if 'elaIndex' in norm %}
+template(
+  name="{{ruleset.name}}-{{norm.name}}-elastic"
+  type="list") {
+  constant(value="{{norm.elaIndex}}-")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="1" position.to="4")
+  constant(value=".")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="6" position.to="7")
+  constant(value=".")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="9" position.to="10")
+  {%- if 'hourly' in ruleset and ruleset.hourly %}
+  constant(value=".")
+  property(name="timegenerated" dateFormat="rfc3339" position.from="12" position.to="13")
+  {%- endif %}
+}
+{%- endif %}
+{%- endfor %}
+{% endif %}
+
+ruleset(name="{{ruleset.name}}"){
+  # Log unstructured syslog message no matter what
+  action( 
+    type="omfile" 
+    dirCreateMode="0750" 
+    FileCreateMode="0644" 
+    Template="RSYSLOG_SyslogProtocol23Format"
+    DynaFile="{{ruleset.name}}-local-unstruct"
+  )
+  {%- if 'byhost' in ruleset and ruleset.byhost %}
+  # Per host filter enabled, log by originating hostname
+  action(
+    type="omfile" 
+    dirCreateMode="0750" 
+    FileCreateMode="0644" 
+    DynaFile="{{ruleset.name}}-local-byhost"
+  )
+  {%- endif %}
+  {%- if 'bySrcIP' in ruleset and ruleset.bySrcIP %}
+  # Per host filter enabled, log by originating ip address
+  action(
+    type="omfile" 
+    dirCreateMode="0750" 
+    FileCreateMode="0644" 
+    Template="RSYSLOG_SyslogProtocol23Format"
+    DynaFile="{{ruleset.name}}-local-bysrcip"
+  )
+  {%- endif %}
+  # If message is preceeded by @cee cookie, try to parse subsequent message as JSON
+  if $msg startswith '@cee: ' or $msg startswith ' @cee: ' then { 
+    action(type="mmjsonparse")
+    if $parsesuccess == "OK" then {
+      {%- if 'sort' in ruleset %}
+      # Message filtering required, sort messages based on user-defined filters
+      {%- for sort in ruleset.sort %}
+      if {{sort.filter}} then {
+        action( 
+          type="omfile" 
+          dirCreateMode="0750" 
+          FileCreateMode="0644" 
+          Template="syslog-normalized-file" 
+          DynaFile="{{ruleset.name}}-local-filter-{{sort.name}}"
+        )
+        {%- if 'elastic' in ruleset and 'enabled' in ruleset.elastic and ruleset.elastic.enabled %}
+        action(
+          type="omelasticsearch" 
+          server=["{{ruleset.elastic.proxies|join("\",\"") }}"] 
+          template="syslog-normalized" 
+          searchIndex="{%if 'elaIndex' in sort%}{{ruleset.name}}-{{sort.name}}-elastic{%else%}{{ruleset.name}}-elastic{%endif%}" 
+          dynSearchIndex="on" 
+          bulkmode="on" 
+          searchType="_doc"
+        )
+        {%- endif %}
+        {%- if 'kafka' in ruleset and ruleset.kafka.enabled %}
+        action(
+          type="omkafka" 
+          broker=["{{ruleset.kafka.brokers|join("\",\"") }}"] 
+          topic="{%if 'kafkaTopic' in sort%}{{sort.kafkaTopic}}{%else%}{{ruleset.kafka.topic}}{%endif%}" 
+          partitions.auto="on" 
+          confParam="compression.codec=snappy" 
+          template="syslog-normalized" 
+          resubmitOnFailure="on" 
+          KeepFailedMessages="on"
+        )
+        {%- endif %}
+        stop
+      }
+      {%- endfor %}
+      {%- endif %}
+      {%- if 'elastic' in ruleset and 'enabled' in ruleset.elastic and ruleset.elastic.enabled %}
+      # Elastic destination enabled, send in structured format
+      action( 
+        type="omelasticsearch" 
+        server=["{{ruleset.elastic.proxies|join("\",\"") }}"] 
+        template="syslog-normalized" 
+        searchIndex="{{ruleset.name}}-elastic" 
+        dynSearchIndex="on" 
+        bulkmode="on" 
+        searchType="_doc"
+      )
+      {%- endif %}
+      {%- if 'kafka' in ruleset and ruleset.kafka.enabled %}
+      # Kafka destination enabled, send in structured format
+      action( 
+        type="omkafka" 
+        broker=["{{ruleset.kafka.brokers|join("\",\"") }}"] 
+        topic="{{ruleset.kafka.topic}}" 
+        partitions.auto="on" 
+        confParam="compression.codec=snappy" 
+        template="{{ ruleset.kafka.template if 'template' in ruleset.kafka else 'RSYSLOG_SyslogProtocol23Format' }}" 
+        resubmitOnFailure="on" 
+        KeepFailedMessages="on" 
+      )
+      {%- endif %}
+      # Stop processing of all JSON parsed messages
+      stop
+    } else {
+      # Log messages where parse failed
+      # No stop, failed messages will be handled as any other unstructured log
+      action( 
+        type="omfile" 
+        dirCreateMode="0750" 
+        FileCreateMode="0644" 
+        Template="RSYSLOG_SyslogProtocol23Format"
+        DynaFile="{{ruleset.name}}-local-byhost-parse-fail"
+      )
+    }
+  }
+
+  # Log JSON log message no matter what, message will represent unstructured text
+  action( 
+    type="omfile" 
+    dirCreateMode="0750" 
+    FileCreateMode="0644" 
+    Template="syslog-json-fileformat" 
+    DynaFile="{{ruleset.name}}-local-json"
+  )
+  {%- if 'normalize' in ruleset %}
+  # Message normalization required, parse the message per normalization rule and send to custom elastic/kafka if required
+  # Liblognorm rule should be concat of rule name and .rulebase suffix
+  # Liblognorm rule with import deps should be placed in /etc/lognorm by the user
+  {%- for norm in ruleset.normalize %}
+  if {{norm.filter}} then {
+    {%- if "msgtagjoin" in norm and norm.msgtagjoin %}
+    action(type="mmrm1stspace")
+    set $!msg = $syslogtag & $msg;
+    {%- endif %}
+    action( type="mmnormalize" rulebase="/etc/lognorm/{{norm.name}}.rulebase"  {%if "msgtagjoin" in norm and norm.msgtagjoin%}variable="$!msg"{%endif%})
+    {%- if "msgtagjoin" in norm and norm.msgtagjoin %}
+    unset $!msg;
+    {%- endif %}
+    action( 
+      type="omfile" 
+      dirCreateMode="0750" 
+      FileCreateMode="0644" 
+      Template="syslog-normalized-file" 
+      DynaFile="{{ruleset.name}}-local-normalized-{{norm.name}}"
+    )
+    {%- if 'elastic' in ruleset and 'enabled' in ruleset.elastic and ruleset.elastic.enabled %}
+    action(
+      type="omelasticsearch" 
+      server=["{{ruleset.elastic.proxies|join("\",\"") }}"] 
+      template="syslog-normalized" 
+      searchIndex="{%if 'elaIndex' in norm%}{{ruleset.name}}-{{norm.name}}-elastic{%else%}{{ruleset.name}}-elastic{%endif%}" 
+      dynSearchIndex="on" 
+      bulkmode="on" 
+      searchType="_doc"
+    )
+    {%- endif %}
+    {%- if 'kafka' in ruleset and ruleset.kafka.enabled %}
+    action(
+      type="omkafka" 
+      broker=["{{ruleset.kafka.brokers|join("\",\"") }}"] 
+      topic="{%if 'kafkaTopic' in norm%}{{norm.kafkaTopic}}{%else%}{{ruleset.kafka.topic}}{%endif%}" 
+      partitions.auto="on" 
+      confParam="compression.codec=snappy" 
+      template="{{ ruleset.kafka.template if 'template' in ruleset.kafka else 'RSYSLOG_SyslogProtocol23Format' }}" 
+      resubmitOnFailure="on" 
+      KeepFailedMessages="on"
+    )
+    {%- endif %}
+    stop
+  }
+  {%- endfor %}
+  # Sort/filtering without normalization and normalization are mutually exclusive
+  # Normalization should win if both are configured
+  {%- elif 'sort' in ruleset %}
+  # Message filtering required, sort messages based on user-defined filters
+  {%- for sort in ruleset.sort %}
+  if {{sort.filter}} then {
+    action( 
+      type="omfile" 
+      dirCreateMode="0750" 
+      FileCreateMode="0644" 
+      Template="syslog-json" 
+      DynaFile="{{ruleset.name}}-local-filter-{{sort.name}}"
+    )
+    {%- if 'elastic' in ruleset and 'enabled' in ruleset.elastic and ruleset.elastic.enabled %}
+    action(
+      type="omelasticsearch" 
+      server=["{{ruleset.elastic.proxies|join("\",\"") }}"] 
+      template="syslog-json" 
+      searchIndex="{%if 'elaIndex' in sort%}{{ruleset.name}}-{{sort.name}}-elastic{%else%}{{ruleset.name}}-elastic{%endif%}" 
+      dynSearchIndex="on" 
+      bulkmode="on" 
+      searchType="_doc"
+    )
+    {%- endif %}
+    {%- if 'kafka' in ruleset and ruleset.kafka.enabled %}
+    action(
+      type="omkafka" 
+      broker=["{{ruleset.kafka.brokers|join("\",\"") }}"] 
+      topic="{%if 'kafkaTopic' in sort%}{{sort.kafkaTopic}}{%else%}{{ruleset.kafka.topic}}{%endif%}" 
+      partitions.auto="on" 
+      confParam="compression.codec=snappy" 
+      template="{{ ruleset.kafka.template if 'template' in ruleset.kafka else 'RSYSLOG_SyslogProtocol23Format' }}" 
+      resubmitOnFailure="on" 
+      KeepFailedMessages="on"
+    )
+    {%- endif %}
+    stop
+  }
+  {%- endfor %}
+  {%- endif %}
+  {%- if 'elastic' in ruleset and 'enabled' in ruleset.elastic and ruleset.elastic.enabled %}
+  # Elastic destination enabled, send in unstructured format
+  action( 
+    type="omelasticsearch" 
+    server=["{{ruleset.elastic.proxies|join("\",\"") }}"] 
+    template="syslog-json" 
+    searchIndex="{{ruleset.name}}-elastic" 
+    dynSearchIndex="on" 
+    bulkmode="on" 
+    searchType="_doc"
+  )
+  {%- endif %}
+  {%- if 'kafka' in ruleset and ruleset.kafka.enabled %}
+  # Kafka destination enabled, send in unstructured format
+  action( 
+    type="omkafka" 
+    broker=["{{ruleset.kafka.brokers|join("\",\"") }}"] 
+    topic="{{ruleset.kafka.topic}}" 
+    partitions.auto="on" 
+    confParam="compression.codec=snappy" 
+    template="{{ ruleset.kafka.template if 'template' in ruleset.kafka else 'RSYSLOG_SyslogProtocol23Format' }}" 
+    resubmitOnFailure="on" 
+    KeepFailedMessages="on" 
+  )
+  {%- endif %}
+}
+# END RULESET {{ruleset.name}}
+{%- endfor %}

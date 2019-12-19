@@ -1,0 +1,35 @@
+---
+- name: install logging packages
+  package:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - rsyslog
+    - snoopy
+
+- name: snoopy extended config
+  copy:
+    src: snoopy.ini
+    dest: /etc/snoopy.ini
+
+- name: Ansible insert lineinfile example
+  lineinfile:
+    dest: /etc/ld.so.preload
+    line: /lib/x86_64-linux-gnu/libsnoopy.so
+    state: present
+    create: yes
+
+- name: rsyslog client configs
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  loop:
+    - src: rsyslog.j2 
+      dest: /etc/rsyslog.conf
+    - src: rsyslog-local.j2
+      dest: /etc/rsyslog.d/001-local.conf
+    - src: rsyslog-client.j2
+      dest: /etc/rsyslog.d/005-client.conf
+  vars:
+    servers: "{{send_logs}}"
+  notify: restart rsyslog

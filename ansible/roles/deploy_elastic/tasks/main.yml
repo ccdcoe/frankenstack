@@ -1,0 +1,12 @@
+---
+- name: Configure system
+  include_tasks: sysctl.yml
+
+- name: Set up elastic database
+  include_tasks: elasticsearch.yml
+
+- name: Set up elastic templates
+  include_tasks: elasticsearch-templates.yml
+
+- name: Set up kibana interfaces
+  include_tasks: kibana.yml

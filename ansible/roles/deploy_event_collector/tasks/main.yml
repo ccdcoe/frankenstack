@@ -1,0 +1,3 @@
+---
+- name: Set up rsyslog collector
+  include_tasks: rsyslog.yml

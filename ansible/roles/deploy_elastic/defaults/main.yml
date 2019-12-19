@@ -1,0 +1,20 @@
+elasticsearch_image: "docker.elastic.co/elasticsearch/elasticsearch-oss:7.4.2"
+kibana_image: "docker.elastic.co/kibana/kibana-oss:7.4.2"
+
+elastic_clusters:
+  - name: default-ela
+    cluster_pretty: josephine
+    hostgroup: worker
+    network: bridge
+    datacenter: default
+    class: hot
+    proxy: http://localhost:9200
+    manage_template: true
+    memory_gb: 
+      node: 4
+
+elastic_template_settings:
+  number_of_replicas: 1
+  number_of_shards: 3
+  refresh_interval: 30s
+  routing.allocation.require.box_type: hot

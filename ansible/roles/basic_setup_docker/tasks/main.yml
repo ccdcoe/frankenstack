@@ -1,0 +1,53 @@
+---
+- name: Ensure old versions of Docker are not installed.
+  package:
+    name:
+      - docker
+      - docker-engine
+    state: absent
+
+- name: Ensure dependencies are installed.
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+    state: present
+
+- name: Add Docker apt key.
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    id: 9DC858229FC7DD38854AE2D88D81803C0EBFCD88
+    state: present
+  register: add_repository_key
+  ignore_errors: no
+
+- name: Add Docker repository.
+  apt_repository:
+    repo: "{{ docker_apt_repository }}"
+    state: present
+    update_cache: true
+
+- name: Install Docker Community Edition from PPA
+  package:
+    name: docker-ce
+    state: latest
+
+- name: Create dedicated dir for per-container bind-mounts
+  file:
+    path: "{{host_container_root}}"
+    state: directory
+    mode: 0700
+
+- stat:
+    path: "{{data.mountpoint}}/docker"
+  register: result
+  when: data is defined
+
+- name: Create custom data directory if we have mounted a dedicated drive
+  file:
+    path: "{{data.mountpoint}}/docker"
+    state: directory
+    mode: 0700
+  when: data is defined and result.stat.exists == false
+  notify: 
+    - docker cleanup

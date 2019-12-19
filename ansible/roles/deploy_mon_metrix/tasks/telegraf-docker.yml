@@ -1,0 +1,63 @@
+- name: pull telegraf image
+  docker_image:
+    name: "{{ telegraf_image }}"
+    source: pull
+  retries: 15
+  delay: 2
+  register: result
+  until: not result.failed
+
+- name: Create config volumes for telegraf
+  docker_volume:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - "config-{{ tick.name }}-docker-telegraf"
+    - "config-{{ tick.name }}-docker-telegraf.d"
+
+- name: Create host folders for static config
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: 0700
+  loop:
+    - /tmp/telegraf-docker
+    - /tmp/telegraf-docker/telegraf.d
+
+- name: Create config files for influx outputs and main params
+  template:
+    src: telegraf.j2
+    dest: /tmp/telegraf-docker/telegraf.conf
+  vars:
+    outputs: "{{ send_metrix }}"
+    interval: 10s
+    flush_interval: 1m
+  notify: copy telegraf main config for monitoring docker
+
+- name: Create config files for docker monitoring
+  template:
+    src: telegraf-docker.j2
+    dest: /tmp/telegraf-docker/telegraf.d/docker.conf
+  notify: copy telegraf docker config for monitoring docker
+
+- name: Create docker container for telegraf monitoring docker, purge networks and stop
+  docker_container:
+    name: "{{ telegraf_docker_name }}"
+    hostname: "{{ telegraf_docker_name }}"
+    image: "{{ telegraf_image }}"
+    state: present
+    restart_policy: unless-stopped
+    volumes:
+      - "config-{{ tick.name }}-docker-telegraf:/etc/telegraf:rw"
+      - "config-{{ tick.name }}-docker-telegraf.d:/etc/telegraf.d:rw"
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: "--config /etc/telegraf/telegraf.conf --config-directory /etc/telegraf.d/"
+
+- name: Turn telegraf into octopus that has access to all networks, start with needed services
+  docker_network:
+    name: "{{ item }}"
+    driver: overlay
+    connected:
+      - "{{ telegraf_docker_name }}"
+    appends: yes
+  loop: "{{ docker_networks }}"

@@ -1,0 +1,13 @@
+- name: Create docker container for redis
+  docker_container:
+    name: "{{item.name}}-{{ groups[item.hostgroup].index(inventory_hostname) }}"
+    hostname: "{{item.name}}-{{ groups[item.hostgroup].index(inventory_hostname) }}"
+    image: "{{redis_image}}"
+    purge_networks: yes
+    state: started
+    restart_policy: unless-stopped
+    published_ports: "{{item.expose}}"
+    networks: 
+      - name: "{{item.network}}"
+  loop: "{{ redis_servers }}"
+  when: item.hostgroup in group_names

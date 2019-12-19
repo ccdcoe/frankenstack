@@ -1,0 +1,21 @@
+- name: pull kibana image
+  docker_image:
+    name: "{{ kibana_image }}"
+    source: pull
+  retries: 15
+  delay: 2
+
+- name: Deploy docker containers for kibana
+  docker_container:
+    name: "{{ item.name }}-kibana-{{ groups[item.hostgroup].index(inventory_hostname) }}"
+    hostname: "{{ item.name }}-kibana-{{ groups[item.hostgroup].index(inventory_hostname) }}"
+    image: "{{ kibana_image }}"
+    purge_networks: yes
+    state: started
+    restart_policy: unless-stopped
+    networks:
+      - name: "{{ item.network }}"
+    env:
+      ELASTICSEARCH_HOSTS: "http://{{ item.name }}-{{ groups[item.hostgroup].index(inventory_hostname) }}:9200"
+  loop: "{{ elastic_clusters }}"
+  when: item.hostgroup in group_names

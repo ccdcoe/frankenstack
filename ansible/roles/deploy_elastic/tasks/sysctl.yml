@@ -1,0 +1,10 @@
+- name: Increase max number of open file handles
+  sysctl:
+    name: "{{item.option}}"
+    value: "{{item.value}}"
+    sysctl_set: yes
+    state: present
+    reload: yes
+  loop:
+    - option: vm.max_map_count
+      value: 262144

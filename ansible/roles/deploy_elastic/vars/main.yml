@@ -1,0 +1,69 @@
+---
+elastic_templates:
+  core:
+    index_patterns:
+    - events-*
+    - rsyslog-*
+    - peek-*
+    mappings:
+      dynamic_templates:
+      - message_field:
+          mapping:
+            norms: 'false'
+            type: text
+          match_mapping_type: string
+          path_match: message
+      - string_fields:
+          mapping:
+            fields:
+              keyword:
+                ignore_above: 256
+                type: keyword
+            norms: 'false'
+            type: text
+          match: '*'
+          match_mapping_type: string
+      properties:
+        '@timestamp':
+          type: date
+        '@version':
+          type: keyword
+    order: 0
+    settings:
+      index: "{{ elastic_template_settings }}"
+    version: 0
+  suricata:
+    index_patterns:
+    - '*-suricata-*'
+    - '*-meer-*'
+    - '*-meercat-*'
+    - '*-meerkat-*'
+    - '*-mob-*'
+    mappings:
+      properties:
+        dest_ip:
+          fields:
+            keyword:
+              ignore_above: 256
+              type: keyword
+          type: ip
+        src_ip:
+          fields:
+            keyword:
+              ignore_above: 256
+              type: keyword
+          type: ip
+    order: 15
+    version: 0
+  windows:
+    index_patterns:
+    - '*-windows-*'
+    - '*-eventlog-*'
+    - '*-sysmon-*'
+    - '*-winlogbeat-*'
+    mappings:
+      properties:
+        Keywords:
+          type: text
+    order: 15
+    version: 0

@@ -1,0 +1,124 @@
+---
+- name: Create host folders for suricata configs and rules
+  file:
+    path: "{{ host_container_root }}/{{ item }}"
+    state: directory
+    mode: 0750
+  loop:
+    - "{{ suricata.name }}"
+    - "{{ suricata.name }}/config"
+
+- name: pull custom images
+  docker_image:
+    name: "{{ item }}"
+    source: pull
+    force_source: yes
+  retries: 15
+  delay: 2
+  register: result
+  until: not result.failed
+  loop:
+    - "{{ suricata_image }}"
+    - "{{ suricata_shipper_image }}"
+    - "{{ suricata_update_image }}"
+
+- set_fact:
+    meerkat: 
+      data_vol: "data-{{ suricata.name }}"
+      rule_vol: "rules-{{ suricata.name }}"
+      socket_vol: "sockets-{{ suricata.name }}"
+      data_socket_vol: "event-sockets-{{suricata.name}}"
+
+- name: Create volumes for suricata
+  docker_volume:
+    name: "{{ item }}"
+  loop:
+    - "data-{{ suricata.name }}"
+    - "rules-{{ suricata.name }}"
+    - "sockets-{{ suricata.name }}"
+    - "event-sockets-{{ suricata.name }}"
+
+- name: Deploy suricata configs
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ host_container_root }}/{{ suricata.name }}/config/{{ item.dest }}"
+    mode: 0644
+  loop:
+    - src: suricata.j2
+      dest: suricata.yaml
+    - src: update.j2
+      dest: update.yaml
+  notify: 
+    - restart suricata
+
+- name: Run kafka shipper for suricata through unix socket output
+  docker_container:
+    name: "{{ suricata.name }}-peek-shipper"
+    image: "{{ suricata_shipper_image }}"
+    state: started
+    restart_policy: unless-stopped
+    command: run
+    network_mode: host
+    env:
+      PEEK_INPUT_UXSOCK_ENABLED: 'true'
+      PEEK_INPUT_UXSOCK_OVERWRITE: 'true'
+      PEEK_STREAM_SURICATA_UXSOCK: "{{suricata.kafka.input_socket_dir}}/{{suricata.kafka.input_socket_file}}"
+      PEEK_PROCESSOR_ENABLED: 'false'
+      PEEK_OUTPUT_KAFKA_ENABLED: 'true'
+      PEEK_OUTPUT_KAFKA_HOST: "{{ suricata.kafka.brokers | join(' ') }}"
+      PEEK_OUTPUT_KAFKA_TOPIC: "{{ suricata.kafka.topic }}"
+    volumes:
+      - "event-sockets-{{ suricata.name }}:{{suricata.kafka.input_socket_dir}}:rw"
+  when: "'kafka' in suricata and 'brokers' in suricata.kafka and suricata.kafka.brokers | length > 0"
+
+- name: Run container for suricata
+  docker_container:
+    name: "{{ suricata.name }}"
+    image: "{{ suricata_image }}"
+    state: started
+    network_mode: host
+    restart_policy: unless-stopped
+    capabilities:
+      - net_admin
+      - sys_nice
+    volumes:
+      - "{{ host_container_root }}/{{ suricata.name }}/config/suricata.yaml:/etc/suricata/suricata.yaml:ro"
+      - "rules-{{ suricata.name }}:/var/lib/suricata:ro"
+      - "data-{{ suricata.name }}:{{ suricata_log_dir }}:rw"
+      - "sockets-{{ suricata.name }}:{{ suricata_socket_dir }}:rw"
+      - "event-sockets-{{ suricata.name }}:{{suricata.kafka.input_socket_dir}}:rw"
+    command: "--af-packet -vvv"
+
+- name: Deploy suricata rules
+  docker_container:
+    name: "{{ suricata.name }}-update"
+    image: "{{ suricata_update_image }}"
+    volumes:
+      - "{{ host_container_root }}/{{ suricata.name }}/config/update.yaml:/etc/update.yaml:ro"
+      - "rules-{{ suricata.name }}:/var/lib/suricata:rw"
+    command: "-c /etc/update.yaml"
+    detach: no
+    auto_remove: no
+  register: restult
+
+- name: Reload suricata on rule update
+  docker_container:
+    name: "{{ suricata.name }}-reloader"
+    image: "{{ suricata_image }}"
+    detach: no
+    auto_remove: no
+    entrypoint:
+      - suricatasc
+      -  "-c reload-rules"
+    volumes:
+      - "{{ host_container_root }}/{{ suricata.name }}/config/suricata.yaml:/etc/suricata/suricata.yaml:ro"
+      - "sockets-{{ suricata.name }}:{{ suricata_socket_dir }}:rw"
+  when: "'skip_reload' is defined"
+
+- name: cleanup
+  docker_container:
+    name: "{{ item }}"
+    state: absent
+  loop:
+    - "{{ suricata.name }}-update"
+    - "{{ suricata.name }}-reloader"

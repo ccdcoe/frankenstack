@@ -1,0 +1,4 @@
+---
+- name: Set up data disk
+  include_tasks: lvm.yml
+  when: "lv.node in ansible_devices"

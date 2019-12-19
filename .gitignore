@@ -1,3 +1,15 @@
+# Ansible infra access
+credentials
+# Infra specific variables
+#bootstrap_*_vars.yml
+host_vars/
+# Avoid leaking internal stuff
+ansible/private_vars/
+ansible/inventory/yellow-developers.ini
+
+# Copied binaries, like sysmon.exe
+*.exe
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

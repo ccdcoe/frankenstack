@@ -1,0 +1,30 @@
+---
+- hosts: vm
+  gather_facts: false
+  connection: local
+
+  vars_files:
+    - private_vars/lab.yml
+    - vars/credentials
+    - vars/bootstrap_vsphere.yml
+
+  vars:
+    vm_name: "{{ vcenter.prefix }}{{ inventory_hostname }}"
+
+  tasks:
+  - name: Remove existing virtual machines
+    vmware_guest:
+      hostname: "{{ vcenter.hostname }}"
+      username: "{{ vcenter_access.username }}"
+      password: "{{ vcenter_access.password }}"
+      validate_certs: False
+      datacenter: "{{ vcenter.datacenter }}"
+      name: "{{ vm_name }}"
+      folder: "{{ vcenter.folder }}"
+      state: absent
+      force: yes
+      cluster: "{{ vcenter.cluster }}"
+      resource_pool: "{{ vcenter.resource_pool }}"
+    retries: 10
+    delay: 5
+    delegate_to: localhost

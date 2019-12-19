@@ -4,3 +4,15 @@ jinja2
 
 kafka-python
 python-snappy
+
+ansible
+pyvmomi
+pyvim
+netaddr
+pywinrm
+requests
+requests-credssp
+
+jupyter
+jupyterlab
+pandas

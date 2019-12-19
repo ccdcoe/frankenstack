@@ -1,0 +1,13 @@
+---
+- hosts: vm
+  gather_facts: true
+
+  vars:
+    vm_name: "{{ vcenter.prefix }}{{ inventory_hostname }}"
+
+  roles:
+    - basic_set_timezone
+    - basic_packages
+    - basic_data_disk
+    - basic_disable_swap
+    - basic_setup_docker

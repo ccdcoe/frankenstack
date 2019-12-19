@@ -1,0 +1,15 @@
+---
+- hosts: vm
+  gather_facts: false
+  connection: local
+
+  vars_files:
+    - private_vars/lab.yml
+    - vars/credentials
+    - vars/bootstrap_vsphere.yml
+
+  vars:
+    vm_name: "{{ vcenter.prefix }}{{ inventory_hostname }}"
+
+  roles:
+    - bootstrap_vsphere

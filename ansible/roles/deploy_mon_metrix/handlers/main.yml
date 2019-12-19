@@ -1,0 +1,12 @@
+---
+
+- name: copy telegraf main config for monitoring docker
+  shell: "docker cp /tmp/telegraf-docker/telegraf.conf {{ telegraf_docker_name }}:/etc/telegraf/telegraf.conf"
+  notify: restart docker telegraf
+
+- name: copy telegraf docker config for monitoring docker
+  shell: "docker cp /tmp/telegraf-docker/telegraf.d/docker.conf {{ telegraf_docker_name }}:/etc/telegraf.d/docker.conf"
+  notify: restart docker telegraf
+
+- name: restart docker telegraf
+  shell: "docker restart {{ telegraf_docker_name }}"

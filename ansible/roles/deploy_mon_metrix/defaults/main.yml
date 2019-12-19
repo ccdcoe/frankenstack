@@ -1,0 +1,4 @@
+---
+telegraf_image: telegraf:alpine
+docker_hostgroup: swarm
+elastic_hostgroup: db

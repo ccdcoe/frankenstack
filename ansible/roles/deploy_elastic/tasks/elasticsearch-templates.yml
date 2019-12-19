@@ -1,0 +1,45 @@
+---
+- name: Set up default base template
+  run_once: true
+  uri:
+    url: "{{ item.proxy }}/_template/default"
+    method: PUT
+    body: "{{ elastic_templates.core | to_json }}"
+    body_format: json
+  loop: "{{ elastic_clusters }}"
+  when: "'proxy' in item and item.manage_template"
+  retries: 10
+  delay: 15
+  register: result
+  until: result.status == 200
+  delegate_to: localhost
+
+- name: Set up windows event template
+  run_once: true
+  uri:
+    url: "{{ item.proxy }}/_template/windows"
+    method: PUT
+    body: "{{ elastic_templates.windows | to_json }}"
+    body_format: json
+  loop: "{{ elastic_clusters }}"
+  when: "'proxy' in item and item.manage_template"
+  retries: 10
+  delay: 15
+  register: result
+  until: result.status == 200
+  delegate_to: localhost
+
+- name: Set up default base template
+  run_once: true
+  uri:
+    url: "{{ item.proxy }}/_template/suricata"
+    method: PUT
+    body: "{{ elastic_templates.suricata | to_json }}"
+    body_format: json
+  loop: "{{ elastic_clusters }}"
+  when: "'proxy' in item and item.manage_template"
+  retries: 10
+  delay: 15
+  register: result
+  until: result.status == 200
+  delegate_to: localhost

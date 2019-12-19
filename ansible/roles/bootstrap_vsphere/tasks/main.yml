@@ -1,0 +1,8 @@
+---
+- name: Bootstrap linux boxes
+  include_tasks: linux.yml
+  when: "'linux' in group_names"
+
+- name: Bootstrap windows boxes
+  include_tasks: windows.yml
+  when: "'windows' in group_names"

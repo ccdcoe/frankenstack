@@ -1,0 +1,54 @@
+---
+- name: Ensure overlay networks
+  hosts: manager
+  gather_facts: true
+
+  vars_files:
+    - vars/bootstrap_frankenstack_vars.yml
+
+  roles:
+    - bootstrap_docker_networks
+
+- name: Clean up temporary container hacks
+  hosts: swarm
+  gather_facts: true
+
+  vars_files:
+    - vars/bootstrap_frankenstack_vars.yml
+
+  tasks:
+    - name: "Remove dummy for network"
+      docker_container:
+        name: dummy-{{ item }}
+        state: absent
+      loop: "{{ docker_networks }}"
+
+    - name: "Spawn dummy container to extend overlay network to worker"
+      shell: "docker run -ti -d --name dummy-{{ item }} --restart=always --network {{ item }} nginx"
+      loop: "{{ docker_networks }}"
+
+- name: set up packet capture
+  hosts: pcap
+  gather_facts: true
+
+  vars_files:
+    - vars/bootstrap_frankenstack_vars.yml
+    - vars/bootstrap_nsm.yml
+
+  roles:
+    #- deploy_nsm_suricata
+    - deploy_nsm_moloch
+
+- name: Clean up temporary container hacks
+  hosts: swarm
+  gather_facts: true
+
+  vars_files:
+    - vars/bootstrap_frankenstack_vars.yml
+
+  tasks:
+    - name: "Remove dummy for overlay network "
+      docker_container:
+        name: dummy-{{ item }}
+        state: absent
+      loop: "{{ docker_networks }}"

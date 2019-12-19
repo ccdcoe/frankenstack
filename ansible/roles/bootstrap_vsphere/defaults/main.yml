@@ -1,0 +1,39 @@
+---
+network_example:
+  dns:
+    domain: network
+    servers:
+      - 1.1.1.1
+  sinet: 
+    gw: "1"
+    ipv4: 10.0.13.0/24
+
+vm_datastore: 'XIO-01'
+vm_template: "Debian 10.0.0 (Build 3) Template"
+vcenter_host: "example.ex"
+
+vm_networks:
+  - name: 'SINET'
+    device_type: 'vmxnet3'
+
+vm_disks:
+  - size_gb: 30
+    type: thin
+    datastore: "{{ vm_datastore }}"
+
+vm_hardware:
+  memory_mb: "2048"
+  num_cpus: 2
+
+vcenter_example:
+  hostname: "{{ vcenter_host }}"
+  datacenter: 'EX'
+  cluster: 'CLUSTER'
+  prefix: 'test-'
+  folder: 'first/second/third'
+  resource_pool: "poolname"
+  datastore: "{{ vm_datastore }}"
+  template: "{{ vm_template }}"
+  networks: "{{ vm_networks }}"
+  disk: "{{ vm_disks }}"
+  hardware: "{{ vm_hardware }}"

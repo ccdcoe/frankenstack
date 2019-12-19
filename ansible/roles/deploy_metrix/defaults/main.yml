@@ -1,0 +1,8 @@
+---
+influxdb_image: influxdb:alpine
+kapacitor_image: kapacitor
+chronograf_image: chronograf
+
+tick:
+  name: default-tick
+  hostgroup: worker

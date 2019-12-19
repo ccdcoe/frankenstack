@@ -1,0 +1,3 @@
+---
+- name: restart envoy
+  shell: "docker restart {{ envoy_prefix }}proxy"

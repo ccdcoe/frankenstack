@@ -2,42 +2,17 @@
 
 Busted. With duct tape, spit and tears. Brought to you by beer.
 
-### 2019
+## 2020
 
-![2019!](/2019.svg)
+### Ansible deployment
 
-## A note about clustered components
+Starting with XS2020 the entire stack will be deployed using ansible playbooks. This includes cloning VMs, creating docker networks, volumes and containers as well as (to some extent) configuring physical machines used for network packet capture.
 
-Most components are self-contained with minimal need for containerized network bridges. However, some tools like elasticsearch, kafka, zookeepeer, etc are designed to scale horizontally. Deploying an elastic cluster on a single host would serve no purpose other than to stay below Java ~32GB heap rule. Since most components are, or will be, dockerized, then it's possible to leverage [docker overlay network](https://docs.docker.com/network/overlay/) to connect clustered images over multiple worker hosts. Creation of this network is not handled by states.
+Refer to the [ansible](ansible/) subdirectory for more details.
 
-Firstly, initialize your docker swarm master. I would recommend doing this on your salt-master or main data collector server.
+## 2019
 
-```
-sudo docker swarm init --advertise-addr=<master-ip>
-```
+### Saltstack
 
-Secondly, join your docker workers to swarm. Doing it via salt is easiest.
+Refer to the [saltstack](saltstack/) subdirectory for more details.
 
-```
-salt 'test-site-*' cmd.run 'docker swarm join --token <master-token> <master-ip>:2377'
-```
-
-Finally, create attachable overlay network on swarm master. Name of this network can then be specified in pillar.
-
-```
-sudo docker network create -d overlay --attachable myoverlay
-```
-
-Note that cluster rebalance operations can be quite network-io intensive and we have not benchmarked this with large elastic or kafka deployments. Furthermore, salt dockerng state module had issues in our lab whereby containers were disconnected from network on second highstate runs. Expect state hacks to work around this issue.
-
-### Verify that zookeeper cluster is up and running
-
-```
-for i in $(seq 20 24); do echo stats | nc 192.168.0.$i 2181 | egrep "Node count|Mode" ; done
-```
-
-### Verify that kafka brokers are alive
-
-```
-echo dump | nc <zk-host> 2181 | grep brokers
-```

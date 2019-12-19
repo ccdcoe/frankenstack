@@ -1,0 +1,18 @@
+---
+- name: Install sysmon and winlogbeat
+  win_chocolatey:
+    name: "{{ item }}"
+    state: present
+    allow_prerelease: no
+  loop:
+    - sysmon
+    - winlogbeat
+
+- name: Deploy winlogbeat config
+  win_template:
+    src: winlogbeat.j2
+    dest: C:\ProgramData\chocolatey\lib\winlogbeat\tools\winlogbeat.yml
+  notify: restart winlogbeat
+
+- name: Set up sysmon
+  include_tasks: windows-sysmon.yml

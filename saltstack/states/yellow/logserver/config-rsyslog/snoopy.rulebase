@@ -1,0 +1,27 @@
+version=2
+
+include=stdtypes.rulebase
+
+type=@ssh:%[
+  {"type": "ipv4", "name":"src_ip"},
+  {"type": "whitespace"},
+  {"type": "number", "name":"src_port"},
+  {"type": "whitespace"},
+  {"type": "ipv4", "name":"dst_ip"},
+  {"type": "whitespace"},
+  {"type": "number", "name":"dst_port"},
+]%
+type=@ssh:%[
+  {"type": "ipv6", "name":"src_ip"},
+  {"type": "whitespace"},
+  {"type": "number", "name":"src_port"},
+  {"type": "whitespace"},
+  {"type": "ipv6", "name":"dst_ip"},
+  {"type": "whitespace"},
+  {"type": "number", "name":"dst_port"},
+]%
+type=@ssh:%[
+  {"type": "literal", "text":"(undefined)"},
+]%
+
+rule=: [login:%login:word% ssh:(%ssh:@ssh%) username:%username:word% uid:%uid:number% group:%group:word% gid:%gid:number% sid:%sid:number% tty:%tty:word% cwd:%cwd:word% filename:%filename:char-to:"]"%]: %cmd:rest%

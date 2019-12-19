@@ -1,0 +1,3 @@
+---
+- name: Set up influx for tick stack
+  include_tasks: influx.yml

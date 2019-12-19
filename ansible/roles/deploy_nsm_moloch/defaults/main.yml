@@ -1,0 +1,94 @@
+---
+host_container_root: /srv/docker-containers
+
+moloch_image:
+  capture: markuskont/moloch-capture
+  viewer: markuskont/moloch-viewer
+  wise: markuskont/moloch-wise
+
+moloch_wise_ext_port: 8081
+
+moloch_prefix: "default-owl"
+moloch_wise_config:
+  redis:
+    - name: Assets
+      host: "{{moloch_prefix}}-redis"
+      type: ip
+
+docker_internal_network: "{{moloch_prefix}}"
+
+moloch_internal_data_dir: "/data/moloch/raw"
+
+moloch_custom_target_fields:
+  - name: target.original
+    kind: lotermfield
+    friendly: Target name
+    help: Target host unaltered host name
+  - name: target.vm
+    kind: lotermfield
+    friendly: Target VM name
+    help: Virtual machine name in vsphere
+  - name: target.pretty
+    kind: lotermfield
+    friendly: Anonymized
+    help: Target host anonymized name
+  - name: target.os
+    kind: lotermfield
+    friendly: Operating System
+    help: Target host OS
+  - name: target.zones
+    kind: lotermfield
+    friendly: Zones that target belongs to
+    help: Target host network zone
+  - name: target.desc
+    kind: lotermfield
+    friendly: Target description
+    help: Target host description as documented by developer
+  - name: target.owner
+    kind: lotermfield
+    friendly: Target owner
+    help: Person who built the damn thing
+
+moloch_custom_fields: "{{ moloch_custom_target_fields }}"
+
+moloch_custom_views:
+  - name: target
+    title: Targets
+    fields: "{{ moloch_custom_fields | map(attribute='name') | list | join(',') }}"
+
+moloch:
+  name: "{{moloch_prefix}}"
+  capture:
+    elasticsearch: 
+      - "moloch.ex"
+    wise:
+      port: "{{ moloch_wise_ext_port }}"
+      host: "127.0.0.1"
+  viewer:
+    elasticsearch: 
+      - "{{moloch_prefix}}-elastic-0:9200"
+      - "{{moloch_prefix}}-elastic-1:9200"
+      - "{{moloch_prefix}}-elastic-2:9200"
+      - "{{moloch_prefix}}-elastic-3:9200"
+    network: "{{ docker_internal_network }}"
+    wise:
+      port: 8081
+      host: "{{moloch_prefix}}-wise"
+  wise:
+    published_port: "{{moloch_wise_ext_port}}"
+    config: "{{moloch_wise_config}}"
+  interfaces:
+    - "{{ suricata_default_interface }}"
+  secret: superdupersecretpleasechangeme
+  host_pcap_dir: "{{host_pcap_dir}}"
+  create_host_pcap_dir: no
+  container_uid: 1000
+  db:
+    shards: 3
+    replicas: 1
+    shards_per_node: 3
+  suricata:
+    container_dir: /var/log/suricata
+    file: alert.json
+  custom_fields: "{{ moloch_custom_fields }}"
+  custom_views: "{{ moloch_custom_views }}"

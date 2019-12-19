@@ -1,0 +1,18 @@
+host_container_root: /srv/docker-containers
+kafka_image: wurstmeister/kafka
+
+kafka_clusters:
+  - name: kafka-default
+    hostgroup: worker
+    network: bridge
+    expose:
+      host: "{{ ansible_all_ipv4_addresses | ipaddr(network.sinet.ipv4) | flatten | min }}"
+      port: 9092
+    zk:
+      cluster: zk-default
+      hostgroup: worker
+    data:
+      retention_hours: 24
+      retention_bytes: 75000000000
+      partitions: "{{groups['worker'] | length}}"
+      replicas: 1

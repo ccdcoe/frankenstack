@@ -1,0 +1,3 @@
+---
+ansible_user: "{{win_template_access.username}}"
+ansible_password: "{{win_template_access.password}}"

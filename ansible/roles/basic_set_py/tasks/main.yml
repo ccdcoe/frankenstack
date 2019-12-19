@@ -1,0 +1,5 @@
+- name: Choose correct remote interpreter
+  set_fact:
+    ansible_python_interpreter: "/usr/bin/python3"
+  delegate_to: "{{ inventory_hostname }}"
+  delegate_facts: True
