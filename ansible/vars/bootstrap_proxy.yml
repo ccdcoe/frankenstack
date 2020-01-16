@@ -64,6 +64,12 @@ proxy:
                 routes:
                 - match: { prefix: "/" }
                   route: { cluster: service_wise }
+              - name: alerta
+                domains:
+                - "alerta.{{exercise_domain}}"
+                routes:
+                - match: { prefix: "/" }
+                  route: { cluster: service_alerta }
             http_filters:
             - name: envoy.router
 
@@ -124,3 +130,9 @@ proxy:
       connect_timeout: 0.25s
       hosts:
       - socket_address: { address: "xs20-yt-owl-wise", port_value: 8081 }
+    - name: service_alerta
+      type: strict_dns
+      dns_lookup_family: V4_ONLY
+      connect_timeout: 0.25s
+      hosts:
+      - socket_address: { address: "xs20-yt-worker-01-alerta-proxy", port_value: 80 }

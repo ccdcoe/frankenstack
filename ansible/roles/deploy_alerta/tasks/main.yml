@@ -1,0 +1,56 @@
+---
+- name: pull alerta images
+  docker_image:
+    name: "{{ item }}"
+    source: pull
+  retries: 15
+  delay: 2
+  register: result
+  until: not result.failed
+  loop:
+    - "{{ mongodb_image }}"
+    - "{{ alerta_api_image }}"
+    - "{{ alerta_web_image }}"
+
+- name: Create volumes for alerta
+  docker_volume:
+    name: "{{ item }}"
+  loop:
+    - "data-alerta-mongo-{{ alerta.name }}"
+    - "alerta-sockets-{{ alerta.name }}"
+
+- name: Create alerta mongodb container
+  docker_container:
+    name: "{{ alerta.name }}-mongodb"
+    image: "{{ mongodb_image }}"
+    state: started
+    restart_policy: unless-stopped
+    volumes: 
+      - "data-alerta-mongo-{{ alerta.name }}:/data/db:rw"
+    networks: 
+     - name: "{{ alerta.network }}"
+
+- name: Create alerta api container
+  docker_container:
+    name: "{{ alerta.name }}-api"
+    image: "{{ alerta_api_image }}"
+    state: started
+    restart_policy: unless-stopped
+    volumes: 
+      - "alerta-sockets-{{ alerta.name }}:/var/alerta/run:rw"
+    networks: 
+     - name: "{{ alerta.network }}"
+    env:
+      DATABASE_URL: "mongodb://{{ alerta.name }}-mongodb:27017/monitoring"
+      CORS_ORIGINS: "{{alerta.cors | join(',')}}"
+
+- name: Create alerta proxy container
+  docker_container:
+    name: "{{ alerta.name }}-proxy"
+    image: "{{ alerta_web_image }}"
+    state: started
+    restart_policy: unless-stopped
+    volumes: 
+      - "alerta-sockets-{{ alerta.name }}:/var/alerta/run:rw"
+    networks: 
+     - name: "{{ alerta.network }}"

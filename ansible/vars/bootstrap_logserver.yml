@@ -3,10 +3,7 @@ logserver_src_brokers:
   - "collector-02.{{exercise_domain}}:9092"
   - "collector-03.{{exercise_domain}}:9092"
 
-logserver_dest_brokers:
-  - "worker-01.{{exercise_domain}}:9092"
-  - "worker-02.{{exercise_domain}}:9092"
-  - "worker-03.{{exercise_domain}}:9092"
+logserver_dest_brokers: "{{logserver_src_brokers}}"
 
 logserver:
   name: "{{ logserver_game_prefix }}"
@@ -21,7 +18,7 @@ logserver:
         brokers: "{{ logserver_dest_brokers }}"
 
       elastic:
-        enabled: True
+        enabled: False
         indexBase: "{{ logserver_game_prefix }}-combined"
         proxies:
           - "logs.elastic.{{exercise_domain}}:80"
@@ -37,32 +34,6 @@ logserver:
       hourly: True
       byhost: False
       bySrcIP: False
-      kafka:
-        enabled: True
-        topic: "{{ logserver_yellow_prefix }}-winlogbeat-01"
-        brokers: "{{ logserver_dest_brokers }}"
-        template: RSYSLOG_SyslogProtocol23Format_imkafka
-      elastic: "{{ rsyslog_winlogbeat_game_config_elastic }}"
-
-    - name: winlogbeat-game
-      hourly: True
-      byhost: False
-      bySrcIP: False
-      kafka:
-        enabled: True
-        topic: "{{ logserver_game_prefix }}-winlogbeat-01"
-        brokers: "{{ logserver_dest_brokers }}"
-        template: RSYSLOG_SyslogProtocol23Format_imkafka
-
-    - name: kolka-suricata
-      hourly: True
-      byhost: False
-      bySrcIP: False
-      kafka:
-        enabled: True
-        topic: "{{ logserver_game_prefix }}-suricata-01"
-        brokers: "{{ logserver_dest_brokers }}"
-        template: RSYSLOG_SyslogProtocol23Format_imkafka
 
     - name: yellow
       hourly: True
@@ -86,10 +57,6 @@ logserver:
         topic: test-topic-windows
         group: "{{ inventory_hostname }}"
         ruleset: winlogbeat-yellow
-      - brokers: "{{ logserver_src_brokers }}"
-        topic: targets-windows
-        group: "{{ inventory_hostname }}"
-        ruleset: winlogbeat-game
     udp:
       - port: 514
         ruleset: game

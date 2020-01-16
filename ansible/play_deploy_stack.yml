@@ -89,6 +89,17 @@
     - deploy_cassandra
     - deploy_metrix
 
+- name: set up frontend stuff
+  hosts: webapp
+  gather_facts: true
+
+  vars_files:
+    - private_vars/lab.yml
+    - vars/bootstrap_frankenstack_vars.yml
+
+  roles:
+    - deploy_alerta
+
 - name: set up node monitoring
   hosts: vm
   gather_facts: true

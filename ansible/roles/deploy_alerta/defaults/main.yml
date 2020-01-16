@@ -1,0 +1,9 @@
+---
+mongodb_image: mongo
+alerta_api_image: markuskont/alerta-api
+alerta_web_image: markuskont/alerta-proxy
+
+alerta:
+  name: default-alerta
+  network: bridge
+  cors: []
