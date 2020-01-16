@@ -31,6 +31,9 @@ elastic_templates:
     order: 0
     settings:
       index: "{{ elastic_template_settings }}"
+      mapping:
+        total_fields:
+          limit: 4000
     version: 0
   suricata:
     index_patterns:
