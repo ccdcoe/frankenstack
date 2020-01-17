@@ -8,6 +8,10 @@ docker_networks:
 prefix: xs20-yt-
 dev_prefix: "{{prefix}}devel-{{inventory_hostname}}"
 
+grafana:
+  name: "{{prefix}}{{inventory_hostname}}-grafana"
+  network: "{{ docker_networks[2] }}"
+
 envoy_networks:
   - name: "{{docker_networks[2]}}"
 

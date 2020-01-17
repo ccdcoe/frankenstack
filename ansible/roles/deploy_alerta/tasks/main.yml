@@ -39,7 +39,7 @@
     volumes: 
       - "alerta-sockets-{{ alerta.name }}:/var/alerta/run:rw"
     networks: 
-     - name: "{{ alerta.network }}"
+      - name: "{{ alerta.network }}"
     env:
       DATABASE_URL: "mongodb://{{ alerta.name }}-mongodb:27017/monitoring"
       CORS_ORIGINS: "{{alerta.cors | join(',')}}"
@@ -53,4 +53,4 @@
     volumes: 
       - "alerta-sockets-{{ alerta.name }}:/var/alerta/run:rw"
     networks: 
-     - name: "{{ alerta.network }}"
+      - name: "{{ alerta.network }}"

@@ -1,0 +1,28 @@
+---
+- name: pull grafana image
+  docker_image:
+    name: "{{ grafana_image }}"
+    source: pull
+  retries: 15
+  delay: 2
+  register: result
+  until: not result.failed
+
+- name: Create volumes for grafana
+  docker_volume:
+    name: "{{ item }}"
+  loop:
+    - "data-grafana-{{ grafana.name }}"
+    - "provision-grafana-{{ grafana.name }}"
+
+- name: Create grafana container
+  docker_container:
+    name: "{{ grafana.name }}"
+    image: "{{ grafana_image }}"
+    state: started
+    restart_policy: unless-stopped
+    volumes: 
+      - "data-grafana-{{ grafana.name }}:/var/lib/grafana:rw"
+      - "provision-grafana-{{ grafana.name }}:/etc/grafana/provision:ro"
+    networks: 
+      - name: "{{ grafana.network }}"

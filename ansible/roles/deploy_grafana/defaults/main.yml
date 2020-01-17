@@ -1,0 +1,5 @@
+---
+grafana_image: grafana/grafana:latest
+grafana:
+  name: default-grafana
+  network: bridge

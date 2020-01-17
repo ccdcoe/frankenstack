@@ -99,6 +99,7 @@
 
   roles:
     - deploy_alerta
+    - deploy_grafana
 
 - name: set up node monitoring
   hosts: vm
