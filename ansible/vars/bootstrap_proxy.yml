@@ -70,6 +70,12 @@ proxy:
                 routes:
                 - match: { prefix: "/" }
                   route: { cluster: service_alerta }
+              - name: alerta_test
+                domains:
+                - "test.alerta.{{exercise_domain}}"
+                routes:
+                - match: { prefix: "/" }
+                  route: { cluster: service_test_alerta }
               - name: grafana
                 domains:
                 - "grafana.{{exercise_domain}}"
@@ -142,6 +148,12 @@ proxy:
       connect_timeout: 0.25s
       hosts:
       - socket_address: { address: "xs20-yt-worker-01-alerta-proxy", port_value: 80 }
+    - name: service_test_alerta
+      type: strict_dns
+      dns_lookup_family: V4_ONLY
+      connect_timeout: 0.25s
+      hosts:
+      - socket_address: { address: "xs20-yt-worker-02-alerta-proxy", port_value: 80 }
     - name: service_grafana
       type: strict_dns
       dns_lookup_family: V4_ONLY

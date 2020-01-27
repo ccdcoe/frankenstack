@@ -22,6 +22,7 @@ alerta:
   network: "{{ docker_networks[2] }}"
   cors:
     - "http://alerta.{{ exercise_domain }}"
+  envs: "{{exercise_envs}}"
 
 zookeeper_clusters:
   # Zookeeper to support kafka cluster that is exposed to targets

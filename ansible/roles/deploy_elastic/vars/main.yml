@@ -68,5 +68,11 @@ elastic_templates:
       properties:
         Keywords:
           type: text
+        winlog.event_data.param1:
+          type: text
+        winlog.event_data.param2:
+          type: text
+        winlog.event_data.param3:
+          type: text
     order: 15
     version: 0

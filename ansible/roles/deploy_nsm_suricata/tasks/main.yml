@@ -48,6 +48,8 @@
       dest: suricata.yaml
     - src: update.j2
       dest: update.yaml
+    - src: disable.j2
+      dest: disable.conf
   notify: 
     - restart suricata
 
@@ -95,6 +97,7 @@
     image: "{{ suricata_update_image }}"
     volumes:
       - "{{ host_container_root }}/{{ suricata.name }}/config/update.yaml:/etc/update.yaml:ro"
+      - "{{ host_container_root }}/{{ suricata.name }}/config/disable.conf:/etc/disable.conf:ro"
       - "rules-{{ suricata.name }}:/var/lib/suricata:rw"
     command: "-c /etc/update.yaml"
     detach: no

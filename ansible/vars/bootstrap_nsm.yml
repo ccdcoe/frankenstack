@@ -96,7 +96,14 @@ suricata:
     sources:
       - "{{suricata_etpro_rule_url}}"
       - https://sslbl.abuse.ch/blacklist/sslblacklist.rules
-    disable: []
+    disable: 
+      - 2027766
+      - 2100366
+      - 2027863
+      - 2839344
+      - 2100368
+      - 2017919
+      - 2013504
 
 suricata_eve_only_long_alert:
   payload: yes             # enable dumping payload in Base64

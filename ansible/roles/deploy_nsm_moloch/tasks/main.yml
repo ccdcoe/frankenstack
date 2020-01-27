@@ -76,7 +76,6 @@
     ulimits:
       - nofile:262144:262144
     volumes: "{{ capture_mounts + [ '%s:%s:ro' | format(meerkat.data_vol, moloch.suricata.container_dir) ] if meerkat.data_vol is defined else capture_mounts }}"
-
     env:
       # Needed for initializing absent db via entrypoint
       MOLOCH_ELASTICSEARCH: "{{ moloch.capture.elasticsearch[0] }}"
@@ -133,7 +132,7 @@
       - node
       - addUser.js 
       - -c ../etc/config.ini
-      - "{{ item.username }} \"{{ item.pretty }}\" {{ item.password }}"
+      - "{{ item.username }} \"{{ item.pretty }}\" {{ item.password }} {%if item.admin %}--admin{%endif%}"
   loop: "{{ moloch_users }}"
 
 - name: Clean up temp containers

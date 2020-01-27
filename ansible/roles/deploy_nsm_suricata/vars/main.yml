@@ -362,3 +362,4 @@ suricata_update_config:
     - "*deleted.rules"
   sources: "{{ suricata.rule.sources }}"
   local: []
+  disable-conf: /etc/disable.conf

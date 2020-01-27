@@ -35,6 +35,15 @@ logserver:
       byhost: False
       bySrcIP: False
 
+    - name: gcx
+      hourly: False
+      byhost: False
+      bySrcIP: False
+      kafka:
+        enabled: True
+        topic: "{{ logserver_game_prefix }}-gcx"
+        brokers: "{{ logserver_dest_brokers }}"
+
     - name: yellow
       hourly: True
       byhost: True
@@ -62,3 +71,5 @@ logserver:
         ruleset: game
       - port: 515
         ruleset: yellow
+      - port: 516
+        ruleset: gcx

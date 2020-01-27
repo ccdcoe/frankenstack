@@ -7,3 +7,7 @@ alerta:
   name: default-alerta
   network: bridge
   cors: []
+  envs:
+    - Production
+    - Devel
+    - Test

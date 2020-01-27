@@ -3,6 +3,7 @@
   docker_image:
     name: "{{ item }}"
     source: pull
+    force_source: yes
   retries: 15
   delay: 2
   register: result
@@ -43,6 +44,7 @@
     env:
       DATABASE_URL: "mongodb://{{ alerta.name }}-mongodb:27017/monitoring"
       CORS_ORIGINS: "{{alerta.cors | join(',')}}"
+      ALLOWED_ENVIRONMENTS: "{{ alerta.envs | join(',') }}"
 
 - name: Create alerta proxy container
   docker_container:
