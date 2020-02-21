@@ -1,0 +1,19 @@
+---
+- name: pull evebox image
+  docker_image:
+    name: "{{ evebox_image }}"
+    source: pull
+    force_source: yes
+  retries: 15
+  delay: 2
+
+- name: Create evebox container
+  docker_container:
+    name: "{{ evebox.name }}"
+    image: "{{ evebox_image }}"
+    state: started
+    restart_policy: unless-stopped
+    networks: 
+      - name: "{{ evebox.network }}"
+    command: "-e {{ evebox.elastic }} --index {{ evebox.index }} --elasticsearch-keyword {{ evebox.keyword }} --host 0.0.0.0"
+    published_ports: "{{ evebox.expose if 'expose' in evebox else [] }}"

@@ -6,6 +6,7 @@ host_vars/
 # Avoid leaking internal stuff
 ansible/private_vars/
 ansible/inventory/yellow-developers.ini
+ansible/inventory/internal.ini
 
 # Copied binaries, like sysmon.exe
 *.exe

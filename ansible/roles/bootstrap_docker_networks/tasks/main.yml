@@ -1,9 +1,9 @@
-- name: Deploy swarm overlay networks
+- name: Deploy docker networks
   run_once: true
   docker_network:
-    name: "{{ item }}"
-    driver: overlay
+    name: "{{ item.name }}"
+    driver: "{{ item.driver if 'driver' in item else 'bridge' }}"
     enable_ipv6: no
     state: present
-    attachable: yes
+    attachable: "{{ 'yes' if item.driver == 'overlay' else 'no' }}"
   loop: "{{ docker_networks }}"

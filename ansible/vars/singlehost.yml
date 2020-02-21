@@ -1,0 +1,248 @@
+---
+# THIS IS A REFERENCE CONFIG, PLEASE MODIFY FOR YOUR ENVIRONMENT
+#
+# NOTE - singlehost deploy does not create ansible user nor any host directories
+# user and container/pcap root directories should already be present on the system
+# furthermore, the system should have docker-ce installed and ansible_user must be in docker group
+
+# User to create remote connection as
+ansible_user: ansible
+# location for storing container config files, etc on host
+host_container_root: /home/ansible/docker-containers
+# Location for storing moloch pcap on host
+host_pcap_dir: /home/ansible/pcap
+
+ansible_python_interpreter: /usr/bin/python3
+
+# Project prefix, will be prepended to all container names
+prefix: frankenstack-reference-capture
+
+# Frankenstack was built to deploy entire cluster remotely
+# Singlehost setup still expects a hostgroup, so we use one as a hack
+hostgroup: "{{ hostgroup | default('singlehost') }}"
+
+# Variable naming is a leftover from exercise deployments
+exercise_key: ~/.ssh/id_rsa
+exercise_domain: lab
+
+# exposed port for elasticsearch
+elastic_ext_port: 9200
+kibana_ext_port: 5601
+# exposed IP for elasticsearch
+# currently limited to single valid address, as used in multiple places (cannot use localhost or 0.0.0.0)
+# can be limited to localhost, but is needed for pushing templates, etc.
+elastic_ext_host: 127.0.0.1
+elastic_heap_size_gb: 2
+
+# Network interface configured for mirror port
+# capture_iface: ens801f1
+
+# Modify _interface_ and _cluster-id_ values if you want to use multiple capture ifaces
+suricata_af_packet_interfaces:
+  - interface: eth0
+    cluster-id: 99
+    cluster-type: cluster_flow
+
+# default settings for all suricata af-packet interfaces
+# you can modify the first element but do not add new items
+suricata_af_packet_default:
+  - interface: default
+    defrag: yes
+
+# Merge per interface config with default section
+# Split to avoid breaking moloch interface config in next section
+suricata_af_packet: "{{ suricata_af_packet_interfaces + suricata_af_packet_default }}"
+
+# to be used together with suricata_af_packet, as moloch only needs a semicolon-separated list of capture interfaces, while meerkat also needs a unique cluster-id for each value
+moloch_capture_interfaces: "{{ suricata_af_packet_interfaces | map(attribute='interface')| list }}"
+
+# Modify with network addresses that you wish to modify
+# Affects both suricata and moloch (reverse dns asset decoration)
+suricata_home_nets:
+  - 10.0.0.0/8
+  - 192.168.0.0/16
+  - fe80::/10
+
+suricata_rule_sources:
+  - https://rules.emergingthreats.net/open/suricata-5.0/emerging.rules.tar.gz
+  - https://raw.githubusercontent.com/OISF/suricata-trafficid/master/rules/traffic-id.rules
+  - https://sslbl.abuse.ch/blacklist/sslblacklist.rules
+  - https://sslbl.abuse.ch/blacklist/sslipblacklist.rules
+  - https://sslbl.abuse.ch/blacklist/ja3_fingerprints.rules
+  - https://github.com/ptresearch/AttackDetection/blob/master/pt.rules.tar.gz
+
+# Disable suricata rules that produce false positives and boring alerts
+suricata_rule_disable:
+  - 're: Malicious JA3 SSL-Client Fingerprint detected \(Tofsee\)'
+  - 're: Malicious JA3 SSL-Client Fingerprint detected \(Adware\)'
+  - 're: ET POLICY Spotify P2P Client'
+  - 're: ETPRO POLICY Android Device Connectivity Check'
+
+moloch_wise_ext_port: 8081
+moloch_viewer_ext_port: 8005
+# Password for admin user
+moloch_admin_pass: SUPERDUPERSECRETPASS
+# Config secret used for encrypting passwords in elasticsearch
+# Will be put into config file and never has to be entered manually, so make it long and complex
+moloch_secret: SUPERDUPERSECRETPLEASECHANGEME
+
+# one bridge to rule them all
+docker_networks:
+  - name: "{{prefix}}-network"
+    driver: bridge
+
+elastic_clusters:
+  - name: "{{prefix}}-elastic"
+    cluster_pretty: josephine
+    hostgroup: "{{ hostgroup }}"
+    network: "{{prefix}}-network"
+    datacenter: "{{ hostgroup }}"
+    class: hot
+    proxy: "http://{{elastic_ext_host}}:{{elastic_ext_port}}"
+    manage_template: true
+    memory_gb: 
+      node: "{{ elastic_heap_size_gb }}"
+    expose_elastic:
+        - "127.0.0.1:{{ elastic_ext_port }}:9200"
+    expose_kibana:
+        - "{{ kibana_ext_port }}:5601"
+
+suricata_socket_file: suricata-events.socket
+suricata:
+  name: "{{prefix}}-suricata"
+  sensor_name: "{{prefix}}-suricata"
+  global_log_socket: "{{ suricata_socket_file }}"
+  elastic:
+    hosts:
+      - "http://127.0.0.1:{{elastic_ext_port}}"
+    index: suricata
+  rule:
+    sources: "{{ suricata_rule_sources }}"
+    disable: "{{ suricata_rule_disable }}"
+suricata_base_eve_types:
+  - alert:
+      payload: yes
+      payload-buffer-size: 4kb
+      payload-printable: yes
+      packet: no
+      metadata: yes
+      http-body: yes
+      http-body-printable: yes
+      tagged-packets: yes
+  - anomaly:
+      enabled: yes
+      types:
+  - http:
+      extended: yes
+  - dns:
+  - tls:
+      extended: yes
+  - files:
+      force-magic: no
+  - smtp:
+  - dnp3
+  - ftp
+  - rdp
+  - nfs
+  - smb
+  - tftp
+  - ikev2
+  - krb5
+  - snmp
+  - sip
+  - dhcp:
+      enabled: yes
+      extended: no
+  - ssh
+  - flow
+
+suricata_eve_log:
+  - eve-log:
+      enabled: yes
+      filetype: unix_stream
+      filename: "/var/lib/peek/{{suricata_socket_file}}"
+      pcap-file: false
+      community-id: true
+      community-id-seed: 0
+      xff:
+        enabled: yes
+        mode: extra-data
+        deployment: reverse
+        header: X-Forwarded-For
+      types: "{{ suricata_base_eve_types }}"
+  - eve-log:
+      enabled: yes
+      filetype: regular
+      filename: alert.json
+      pcap-file: false
+      community-id: true
+      community-id-seed: 0
+      xff:
+        enabled: yes
+        mode: extra-data
+        deployment: reverse
+        header: X-Forwarded-For
+      types:
+        - alert:
+            payload: no
+            payload-buffer-size: 4kb
+            payload-printable: no
+            packet: no
+            metadata: yes
+            http-body: no
+            http-body-printable: no
+            tagged-packets: no
+
+moloch_wise_config:
+  reversedns:
+    range: "{{ suricata_home_nets | join(';') }}"
+    field: asset
+
+moloch_users:
+  - username: admin
+    password: "{{moloch_admin_pass}}"
+    admin: yes
+    pretty: Administrator
+
+moloch_prefix: "{{prefix}}-owl"
+moloch:
+  name: "{{moloch_prefix}}"
+  capture:
+    elasticsearch: 
+    - "http://localhost:{{ elastic_ext_port }}"
+    wise:
+      port: "{{ moloch_wise_ext_port }}"
+      host: "127.0.0.1"
+  viewer:
+    elasticsearch: 
+    - "http://{{ prefix }}-elastic-0:9200"
+    network: "{{ prefix }}-network"
+    wise:
+      port: 8081
+      host: "{{moloch_prefix}}-wise"
+    expose:
+      - "{{moloch_viewer_ext_port}}:8005"
+  wise:
+    published_port: "{{ moloch_wise_ext_port }}"
+    config: "{{ moloch_wise_config }}"
+  interfaces: "{{ moloch_capture_interfaces }}"
+  secret: "{{ moloch_secret }}"
+  host_pcap_dir: "{{ host_pcap_dir }}"
+  create_host_pcap_dir: no
+  container_uid: 1000
+  db:
+    shards: 1
+    replicas: 0
+    shards_per_node: 3
+  suricata:
+    container_dir: /var/log/suricata
+    file: alert.json
+
+evebox:
+  name: "{{ prefix }}-evebox"
+  elastic: "http://{{ prefix }}-elastic-0:9200"
+  network: "{{ prefix }}-network"
+  index: "{{ suricata.elastic.index }}"
+  keyword: keyword
+  expose:
+    - 5636:5636

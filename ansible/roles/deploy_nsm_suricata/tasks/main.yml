@@ -28,6 +28,10 @@
       rule_vol: "rules-{{ suricata.name }}"
       socket_vol: "sockets-{{ suricata.name }}"
       data_socket_vol: "event-sockets-{{suricata.name}}"
+    kafka_brokers: "{{ suricata.kafka.brokers if 'kafka' in suricata else ['localhost:9092'] }}"
+    kafka_topic: "{{ suricata.kafka.topic if 'kafka' in suricata else 'peek' }}"
+    ela_hosts: "{{ suricata.elastic.hosts if 'elastic' in suricata else ['http://localhost:9200'] }}"
+    ela_index: "{{ suricata.elastic.index if 'elastic' in suricata else 'suricata' }}"
 
 - name: Create volumes for suricata
   docker_volume:
@@ -53,6 +57,18 @@
   notify: 
     - restart suricata
 
+- set_fact:
+    suricata_volumes: 
+      - "{{ host_container_root }}/{{ suricata.name }}/config/suricata.yaml:/etc/suricata/suricata.yaml:ro"
+      - "rules-{{ suricata.name }}:/var/lib/suricata:ro"
+      - "data-{{ suricata.name }}:{{ suricata_log_dir }}:rw"
+      - "sockets-{{ suricata.name }}:{{ suricata_socket_dir }}:rw"
+    suricata_socket_volumes:
+      - "event-sockets-{{ suricata.name }}:/var/lib/peek:rw"
+
+- set_fact:
+    suricata_extended_volumes: "{{ suricata_volumes + suricata_socket_volumes }}"
+
 - name: Run kafka shipper for suricata through unix socket output
   docker_container:
     name: "{{ suricata.name }}-peek-shipper"
@@ -64,14 +80,17 @@
     env:
       PEEK_INPUT_UXSOCK_ENABLED: 'true'
       PEEK_INPUT_UXSOCK_OVERWRITE: 'true'
-      PEEK_STREAM_SURICATA_UXSOCK: "{{suricata.kafka.input_socket_dir}}/{{suricata.kafka.input_socket_file}}"
-      PEEK_PROCESSOR_ENABLED: 'false'
-      PEEK_OUTPUT_KAFKA_ENABLED: 'true'
-      PEEK_OUTPUT_KAFKA_HOST: "{{ suricata.kafka.brokers | join(' ') }}"
-      PEEK_OUTPUT_KAFKA_TOPIC: "{{ suricata.kafka.topic }}"
-    volumes:
-      - "event-sockets-{{ suricata.name }}:{{suricata.kafka.input_socket_dir}}:rw"
-  when: "'kafka' in suricata and 'brokers' in suricata.kafka and suricata.kafka.brokers | length > 0"
+      PEEK_STREAM_SURICATA_UXSOCK: "/var/lib/peek/{{ suricata.global_log_socket if 'global_log_socket' in suricata else 'suricata-events.socket' }}"
+      PEEK_PROCESSOR_COMPAT_LOGSTASH: 'true'
+      PEEK_OUTPUT_KAFKA_ENABLED: "{{ 'true' if 'kafka' in suricata else 'false' }}"
+      PEEK_OUTPUT_KAFKA_HOST: "{{ kafka_brokers | join(' ')}}"
+      PEEK_OUTPUT_KAFKA_TOPIC: "{{ kafka_topic }}"
+      PEEK_OUTPUT_ELASTIC_ENABLED: "{{ 'true' if 'elastic' in suricata else 'false' }}"
+      PEEK_OUTPUT_ELASTIC_HOST: "{{ ela_hosts | join(' ')}}"
+      PEEK_OUTPUT_ELASTIC_PREFIX: "{{ ela_index }}"
+      PEEK_OUTPUT_ELASTIC_MERGE: 'true'
+    volumes: "{{ suricata_socket_volumes }}"
+  when: "('kafka' in suricata and 'brokers' in suricata.kafka and suricata.kafka.brokers | length > 0) or ('elastic' in suricata and 'hosts' in suricata.elastic and suricata.elastic.hosts | length > 0)"
 
 - name: Run container for suricata
   docker_container:
@@ -80,15 +99,11 @@
     state: started
     network_mode: host
     restart_policy: unless-stopped
+    privileged: yes 
     capabilities:
       - net_admin
       - sys_nice
-    volumes:
-      - "{{ host_container_root }}/{{ suricata.name }}/config/suricata.yaml:/etc/suricata/suricata.yaml:ro"
-      - "rules-{{ suricata.name }}:/var/lib/suricata:ro"
-      - "data-{{ suricata.name }}:{{ suricata_log_dir }}:rw"
-      - "sockets-{{ suricata.name }}:{{ suricata_socket_dir }}:rw"
-      - "event-sockets-{{ suricata.name }}:{{suricata.kafka.input_socket_dir}}:rw"
+    volumes: "{{ suricata_extended_volumes }}"
     command: "--af-packet -vvv"
 
 - name: Deploy suricata rules

@@ -90,6 +90,7 @@
     image: "{{ moloch_image.viewer }}"
     state: started
     restart_policy: unless-stopped
+    published_ports: "{{ moloch.viewer.expose | default([]) }}"
     networks:
       - name: "{{ moloch.viewer.network }}"
     volumes:
@@ -97,7 +98,7 @@
       - "{{ moloch.host_pcap_dir }}:{{ moloch_internal_data_dir }}:rw"
     env:
       # Needed for initializing absent db via entrypoint
-      MOLOCH_ELASTICSEARCH: "{{ moloch.capture.elasticsearch[0] }}"
+      MOLOCH_ELASTICSEARCH: "{{ moloch.viewer.elasticsearch[0] }}"
       MOLOCH_DB_SHARDS: "{{ moloch.db.shards }}"
       MOLOCH_DB_REPLICAS: "{{ moloch.db.replicas }}"
       MOLOCH_DB_SHARDS_PER_NODE: "{{ moloch.db.shards_per_node }}"

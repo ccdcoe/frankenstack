@@ -1,0 +1,8 @@
+---
+evebox_image: jasonish/evebox:master
+evebox:
+  name: default-evebox
+  elastic: http://elastic:9200
+  network: bridge
+  index: suricata
+  keyword: keyword

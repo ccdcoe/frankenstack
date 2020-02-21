@@ -15,6 +15,7 @@
     restart_policy: unless-stopped
     networks:
       - name: "{{ item.network }}"
+    published_ports: "{{ item.expose_kibana | default([]) }}"
     env:
       ELASTICSEARCH_HOSTS: "http://{{ item.name }}-{{ groups[item.hostgroup].index(inventory_hostname) }}:9200"
   loop: "{{ elastic_clusters }}"

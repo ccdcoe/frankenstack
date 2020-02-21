@@ -56,6 +56,8 @@ elastic_templates:
               ignore_above: 256
               type: keyword
           type: ip
+        payload:
+          type: binary
     order: 15
     version: 0
   windows:

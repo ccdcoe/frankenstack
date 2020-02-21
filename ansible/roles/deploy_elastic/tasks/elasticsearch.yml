@@ -28,6 +28,7 @@
       - name: "{{ item.network }}"
     ulimits:
       - nofile:262144:262144
+    published_ports: "{{ item.expose_elastic | default([]) }}"
     env:
       discovery.seed_hosts: "{%set max=groups[item.hostgroup]|length%}{%for i in range(max)%}{{item.name}}-{{i}}{%if i < max-1%},{%endif%}{%endfor%}"
       cluster.name: "{%if 'cluster_pretty' in item%}{{item.cluster_pretty}}{%else%}{{item.name}}{%endif%}"

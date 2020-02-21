@@ -8,6 +8,12 @@ moloch_image:
 
 moloch_wise_ext_port: 8081
 
+moloch_users:
+  - username: admin
+    password: admin
+    admin: yes
+    pretty: Administrator
+
 moloch_prefix: "default-owl"
 moloch_wise_config:
   redis:

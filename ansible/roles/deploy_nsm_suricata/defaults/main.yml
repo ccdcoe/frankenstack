@@ -7,11 +7,10 @@ suricata_shipper_image: markuskont/peek
 suricata:
   name: default-suricata
   sensor_name: default-suricata
+  global_log_socket: suricata-events.socket
   kafka:
     topic: default-suricata
     brokers: []
-    input_socket_dir: /var/lib/peek
-    input_socket_file: suricata-events.socket
   interface: ens192
   rule:
     sources:
@@ -32,6 +31,7 @@ suricata_rule_dir: /var/lib/suricata/rules
 
 suricata_af_packet:
   - interface: "{{ suricata.interface }}"
+    threads: 1
     cluster-id: 99
     cluster-type: cluster_flow
     defrag: yes
