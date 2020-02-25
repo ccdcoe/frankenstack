@@ -6,24 +6,18 @@
 # furthermore, the system should have docker-ce installed and ansible_user must be in docker group
 
 # User to create remote connection as
-ansible_user: ansible
+# ansible_user: ansible
 # location for storing container config files, etc on host
-host_container_root: /home/ansible/docker-containers
+host_container_root: "{{ ansible_env.HOME }}/.ansible/docker-containers"
 # Location for storing moloch pcap on host
-host_pcap_dir: /home/ansible/pcap
+host_pcap_dir: /srv/pcap
+
+exercise_domain: berylia.org
 
 ansible_python_interpreter: /usr/bin/python3
 
 # Project prefix, will be prepended to all container names
 prefix: frankenstack-reference-capture
-
-# Frankenstack was built to deploy entire cluster remotely
-# Singlehost setup still expects a hostgroup, so we use one as a hack
-hostgroup: "{{ hostgroup | default('singlehost') }}"
-
-# Variable naming is a leftover from exercise deployments
-exercise_key: ~/.ssh/id_rsa
-exercise_domain: lab
 
 # exposed port for elasticsearch
 elastic_ext_port: 9200
@@ -34,6 +28,10 @@ kibana_ext_port: 5601
 elastic_ext_host: 127.0.0.1
 elastic_heap_size_gb: 2
 
+# Uncomment following lines to use non open-source images
+# elasticsearch_image: "docker.elastic.co/elasticsearch/elasticsearch:7.6.0"
+# kibana_image: "docker.elastic.co/kibana/kibana:7.6.0"
+
 # Network interface configured for mirror port
 # capture_iface: ens801f1
 
@@ -41,6 +39,9 @@ elastic_heap_size_gb: 2
 suricata_af_packet_interfaces:
   - interface: eth0
     cluster-id: 99
+    cluster-type: cluster_flow
+  - interface: eth1
+    cluster-id: 98
     cluster-type: cluster_flow
 
 # default settings for all suricata af-packet interfaces
@@ -91,13 +92,22 @@ docker_networks:
   - name: "{{prefix}}-network"
     driver: bridge
 
+redis_servers:
+  - name: "{{ prefix }}-redis"
+    singlehost: true
+    expose:
+      - 6379:6379
+    network: "{{ prefix }}-network"
+
+elastic_template_settings:
+  number_of_replicas: 0
+  number_of_shards: 1
+  refresh_interval: 30s
+
 elastic_clusters:
   - name: "{{prefix}}-elastic"
-    cluster_pretty: josephine
-    hostgroup: "{{ hostgroup }}"
     network: "{{prefix}}-network"
-    datacenter: "{{ hostgroup }}"
-    class: hot
+    singlehost: true
     proxy: "http://{{elastic_ext_host}}:{{elastic_ext_port}}"
     manage_template: true
     memory_gb: 
@@ -107,6 +117,7 @@ elastic_clusters:
     expose_kibana:
         - "{{ kibana_ext_port }}:5601"
 
+suricata_bypass_encryption: true
 suricata_socket_file: suricata-events.socket
 suricata:
   name: "{{prefix}}-suricata"
@@ -115,7 +126,7 @@ suricata:
   elastic:
     hosts:
       - "http://127.0.0.1:{{elastic_ext_port}}"
-    index: suricata
+    index: events-suricata
   rule:
     sources: "{{ suricata_rule_sources }}"
     disable: "{{ suricata_rule_disable }}"
@@ -203,6 +214,10 @@ moloch_users:
     password: "{{moloch_admin_pass}}"
     admin: yes
     pretty: Administrator
+  - username: vagrant
+    password: vagrant
+    admin: no
+    pretty: Vagrant
 
 moloch_prefix: "{{prefix}}-owl"
 moloch:
@@ -228,7 +243,7 @@ moloch:
   interfaces: "{{ moloch_capture_interfaces }}"
   secret: "{{ moloch_secret }}"
   host_pcap_dir: "{{ host_pcap_dir }}"
-  create_host_pcap_dir: no
+  create_host_pcap_dir: true
   container_uid: 1000
   db:
     shards: 1
@@ -246,3 +261,4 @@ evebox:
   keyword: keyword
   expose:
     - 5636:5636
+

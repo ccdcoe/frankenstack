@@ -1,0 +1,35 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+NAME="frankenstack-singlehost"
+CPU=8
+MEM=8196
+VERBOSE=false
+
+Vagrant.configure(2) do |config|
+  config.vm.define NAME do |box|
+    box.vm.box = "debian/buster64"
+    box.vm.hostname = NAME
+    box.vm.network :private_network, ip: "192.168.34.10"
+    box.vm.synced_folder ".", "/vagrant", 
+      type: "nfs", 
+      nfs_udp: false, 
+      nfs_version: 4
+    box.vm.provider :virtualbox do |vb|
+      vb.customize ["modifyvm", :id, "--memory", MEM]
+      vb.customize ["modifyvm", :id, "--cpus", CPU]
+    end
+    config.vm.provision :ansible_local do |ansible|
+      ansible.install = true
+      ansible.install_mode = "pip"
+      ansible.playbook = "./play_bootstrap_singlehost.yml"
+      ansible.become = true
+      ansible.verbose = VERBOSE
+    end
+    config.vm.provision :ansible_local do |ansible|
+      ansible.playbook = "./play_deploy_singlehost.yml"
+      ansible.become = true
+      ansible.verbose = VERBOSE
+    end
+  end
+end

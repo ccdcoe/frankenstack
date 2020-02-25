@@ -25,9 +25,10 @@
 - name: Create pcap directory on host
   file:
     path: "{{ moloch.host_pcap_dir }}"
+    state: directory
     mode: 0750
     owner: "{{ moloch.container_uid | default('1000') }}"
-  when: moloch.create_host_pcap_dir | default('no') == 'yes'
+  when: moloch.create_host_pcap_dir | default('false')
 
 - name: Deploy moloch config for capture on host
   template:

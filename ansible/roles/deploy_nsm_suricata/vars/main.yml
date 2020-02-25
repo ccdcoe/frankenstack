@@ -63,6 +63,7 @@ suricata_config:
         enabled: yes
       tls:
         enabled: yes
+        encryption-handling: "{{'bypass' if suricata_bypass_encryption else 'default'}}"
         detection-ports:
           dp: 443
         ja3-fingerprints: auto

@@ -1,4 +1,6 @@
-- name: Create docker container for redis
+# TODO - placeholder for clustered setup, each node is currently separate
+# currently requires hostgroup to add a unique conainer identifier, so docker dns would work
+- name: Create docker container for redis on multiple hosts
   docker_container:
     name: "{{item.name}}-{{ groups[item.hostgroup].index(inventory_hostname) }}"
     hostname: "{{item.name}}-{{ groups[item.hostgroup].index(inventory_hostname) }}"
@@ -10,4 +12,19 @@
     networks: 
       - name: "{{item.network}}"
   loop: "{{ redis_servers }}"
-  when: item.hostgroup in group_names
+  when: not item.singlehost and item.hostgroup in group_names
+
+# Assumes that everything is installed on single box and no name conflict could happen
+- name: Create docker container for redis on single host
+  docker_container:
+    name: "{{item.name}}-0"
+    hostname: "{{item.name}}-0"
+    image: "{{redis_image}}"
+    purge_networks: yes
+    state: started
+    restart_policy: unless-stopped
+    published_ports: "{{item.expose}}"
+    networks: 
+      - name: "{{item.network}}"
+  loop: "{{ redis_servers }}"
+  when: item.singlehost

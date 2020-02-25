@@ -1,0 +1,11 @@
+- name: Bootstrap singlehost by setting up 
+  hosts: all
+
+  vars_files:
+    - vars/singlehost.yml
+
+  roles:
+    - basic_set_timezone
+    - basic_packages
+    - basic_disable_swap
+    - basic_setup_docker

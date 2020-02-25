@@ -1,9 +1,10 @@
-elasticsearch_image: "docker.elastic.co/elasticsearch/elasticsearch-oss:7.5.2"
-kibana_image: "docker.elastic.co/kibana/kibana-oss:7.5.2"
+elasticsearch_image: "docker.elastic.co/elasticsearch/elasticsearch-oss:7.6.0"
+kibana_image: "docker.elastic.co/kibana/kibana-oss:7.6.0"
 
 elastic_clusters:
   - name: default-ela
     cluster_pretty: josephine
+    singlehost: false
     hostgroup: worker
     network: bridge
     datacenter: default

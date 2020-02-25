@@ -17,6 +17,8 @@ suricata:
       - https://rules.emergingthreats.net/open/suricata-5.0/emerging.rules.tar.gz
     disable: []
 
+suricata_bypass_encryption: false
+
 suricata_rules:
   - suricata.rules
   

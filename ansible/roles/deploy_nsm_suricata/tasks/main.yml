@@ -15,8 +15,8 @@
     force_source: yes
   retries: 15
   delay: 2
-  register: result
-  until: not result.failed
+  register: docker_pull
+  until: not docker_pull.failed
   loop:
     - "{{ suricata_image }}"
     - "{{ suricata_shipper_image }}"
@@ -42,7 +42,19 @@
     - "sockets-{{ suricata.name }}"
     - "event-sockets-{{ suricata.name }}"
 
-- name: Deploy suricata configs
+- name: Deploy suricata-update configs
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ host_container_root }}/{{ suricata.name }}/config/{{ item.dest }}"
+    mode: 0644
+  loop:
+    - src: update.j2
+      dest: update.yaml
+    - src: disable.j2
+      dest: disable.conf
+  register: suricata_update_config
+
+- name: Deploy suricata-update configs
   template:
     src: "{{ item.src }}"
     dest: "{{ host_container_root }}/{{ suricata.name }}/config/{{ item.dest }}"
@@ -50,12 +62,9 @@
   loop:
     - src: suricata.j2
       dest: suricata.yaml
-    - src: update.j2
-      dest: update.yaml
-    - src: disable.j2
-      dest: disable.conf
   notify: 
     - restart suricata
+  register: suricata_config
 
 - set_fact:
     suricata_volumes: 
@@ -118,7 +127,11 @@
     detach: no
     auto_remove: no
   register: restult
+  tags:
+    - suricata
+    - rule_update
 
+# skip if suricata config is changed, handler will restart the daemon anyway leading to wasted deploy time and even socket connect fail
 - name: Reload suricata on rule update
   docker_container:
     name: "{{ suricata.name }}-reloader"
@@ -131,7 +144,7 @@
     volumes:
       - "{{ host_container_root }}/{{ suricata.name }}/config/suricata.yaml:/etc/suricata/suricata.yaml:ro"
       - "sockets-{{ suricata.name }}:{{ suricata_socket_dir }}:rw"
-  when: "'skip_reload' is defined"
+  when: not suricata_config.changed and not docker_pull.changed
 
 - name: cleanup
   docker_container:

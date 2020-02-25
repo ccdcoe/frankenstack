@@ -2,6 +2,7 @@ redis_image: redis
 
 redis_servers:
   - name: default-redis
+    singlehost: false
     hostgroup: worker
     expose: []
     network: bridge
