@@ -67,9 +67,7 @@ logFileCreation = true
 
 pcapReadMethod=tpacketv3
 
-{%- if 'rules' in moloch%}
-rulesFiles=/data/moloch/etc/rules.yaml
-{% endif %}
+rulesFiles=/data/moloch/etc/rules.yml
 
 [headers-http-request]
 referer=type:string;count:true;unique:true

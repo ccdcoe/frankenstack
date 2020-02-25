@@ -30,6 +30,13 @@
     owner: "{{ moloch.container_uid | default('1000') }}"
   when: moloch.create_host_pcap_dir | default('false')
 
+- name: Deploy moloch rules file on host
+  template:
+    src: moloch-rules.j2
+    dest: "{{ host_container_root }}/{{ moloch.name }}/config/moloch-rules.yml"
+    mode: 0644
+  notify: restart moloch capture
+
 - name: Deploy moloch config for capture on host
   template:
     src: moloch-config.j2
@@ -62,6 +69,7 @@
 - name: Construct mounted volume list
   set_fact:
     capture_mounts:
+      - "{{ host_container_root }}/{{moloch.name}}/config/moloch-rules.yml:/data/moloch/etc/rules.yml:ro"
       - "{{ host_container_root }}/{{ moloch.name }}/config/moloch-capture.ini:/data/moloch/etc/config.ini:ro"
       - "{{ moloch.host_pcap_dir }}:{{ moloch_internal_data_dir }}:rw"
 

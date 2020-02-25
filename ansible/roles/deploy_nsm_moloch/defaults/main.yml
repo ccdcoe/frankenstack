@@ -98,3 +98,13 @@ moloch:
     file: alert.json
   custom_fields: "{{ moloch_custom_fields }}"
   custom_views: "{{ moloch_custom_views }}"
+
+moloch_rules:
+  - name: "Drop encrypted protocols"
+    when: "fieldSet"
+    fields:
+      protocols:
+      - tls
+      - ssh
+    ops:
+      _maxPacketsToSave: 12
