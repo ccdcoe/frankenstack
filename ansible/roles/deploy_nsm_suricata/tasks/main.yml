@@ -78,7 +78,7 @@
 - set_fact:
     suricata_extended_volumes: "{{ suricata_volumes + suricata_socket_volumes }}"
 
-- name: Run kafka shipper for suricata through unix socket output
+- name: Run event shipper for suricata through unix socket output
   docker_container:
     name: "{{ suricata.name }}-peek-shipper"
     image: "{{ suricata_shipper_image }}"
