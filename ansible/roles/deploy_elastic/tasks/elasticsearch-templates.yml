@@ -12,7 +12,6 @@
   delay: 15
   register: result
   until: result.status == 200
-  delegate_to: localhost
 
 - name: Set up windows event template
   run_once: true
@@ -27,7 +26,6 @@
   delay: 15
   register: result
   until: result.status == 200
-  delegate_to: localhost
 
 - name: Set up default base template
   run_once: true
@@ -42,4 +40,3 @@
   delay: 15
   register: result
   until: result.status == 200
-  delegate_to: localhost
