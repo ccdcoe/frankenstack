@@ -1,7 +1,7 @@
 ---
 host_container_root: /srv/docker-containers
-suricata_image: markuskont/suricata
-suricata_update_image: markuskont/suricata-update
+suricata_image: jasonish/suricata
+suricata_update_image: jasonish/suricata
 suricata_shipper_image: markuskont/peek
 
 suricata:

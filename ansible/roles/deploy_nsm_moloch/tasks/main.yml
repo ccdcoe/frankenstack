@@ -1,4 +1,7 @@
 ---
+- set_fact:
+    moloch_container_name: "{{ moloch.name }}"
+
 - name: Create host folders for moloch configs and rules
   file:
     path: "{{ host_container_root }}/{{ item }}"
@@ -35,7 +38,8 @@
     src: moloch-rules.j2
     dest: "{{ host_container_root }}/{{ moloch.name }}/config/moloch-rules.yml"
     mode: 0644
-  notify: restart moloch capture
+  notify:
+    - restart moloch capture
 
 - name: Deploy moloch config for capture on host
   template:
@@ -45,7 +49,8 @@
   vars:
     elasticsearch: "{{ moloch.capture.elasticsearch }}"
     wise: "{{ moloch.capture.wise | default(None) }}"
-  notify: restart moloch capture
+  notify:
+    - restart moloch capture
 
 - name: Deploy moloch config for viewer in container
   template:
@@ -55,7 +60,8 @@
   vars:
     elasticsearch: "{{ moloch.viewer.elasticsearch }}"
     wise: "{{ moloch.viewer.wise | default(None) }}"
-  notify: restart moloch viewer
+  notify:
+    - restart moloch viewer
 
 - name: Deploy wise config
   template:
@@ -64,10 +70,10 @@
     mode: 0644
   vars:
     wiseconfig: "{{ moloch.wise.config | default({}) }}"
-  notify: restart moloch wise
+  notify:
+    - restart moloch wise
 
-- name: Construct mounted volume list
-  set_fact:
+- set_fact:
     capture_mounts:
       - "{{ host_container_root }}/{{moloch.name}}/config/moloch-rules.yml:/data/moloch/etc/rules.yml:ro"
       - "{{ host_container_root }}/{{ moloch.name }}/config/moloch-capture.ini:/data/moloch/etc/config.ini:ro"
@@ -150,3 +156,4 @@
     name: "{{ moloch.name }}-viewer-user-add-{{item.username}}"
     state: absent
   loop: "{{ moloch_users }}"
+

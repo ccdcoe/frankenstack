@@ -77,6 +77,7 @@
 
 - set_fact:
     suricata_extended_volumes: "{{ suricata_volumes + suricata_socket_volumes }}"
+    suricata_container_name: "{{ suricata.name }}"
 
 - name: Run event shipper for suricata through unix socket output
   docker_container:
@@ -114,6 +115,9 @@
       - sys_nice
     volumes: "{{ suricata_extended_volumes }}"
     command: "--af-packet -vvv"
+    env:
+      PUID: "61000"
+      PGID: "61000"
 
 - name: Deploy suricata rules
   docker_container:
@@ -123,9 +127,12 @@
       - "{{ host_container_root }}/{{ suricata.name }}/config/update.yaml:/etc/update.yaml:ro"
       - "{{ host_container_root }}/{{ suricata.name }}/config/disable.conf:/etc/disable.conf:ro"
       - "rules-{{ suricata.name }}:/var/lib/suricata:rw"
-    command: "-c /etc/update.yaml"
+    command: "suricata-update -c /etc/update.yaml"
     detach: no
     auto_remove: no
+    env:
+      PUID: "61000"
+      PGID: "61000"
   register: restult
   tags:
     - suricata

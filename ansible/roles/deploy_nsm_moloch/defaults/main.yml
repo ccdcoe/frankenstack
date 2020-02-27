@@ -84,9 +84,9 @@ moloch:
     published_port: "{{moloch_wise_ext_port}}"
     config: "{{moloch_wise_config}}"
   interfaces:
-    - "{{ suricata_default_interface }}"
+    - "{{ suricata_default_interface | default('eth0') }}"
   secret: superdupersecretpleasechangeme
-  host_pcap_dir: "{{host_pcap_dir}}"
+  host_pcap_dir: "{{host_pcap_dir|default('/srv/pcap')}}"
   create_host_pcap_dir: false
   container_uid: 1000
   db:

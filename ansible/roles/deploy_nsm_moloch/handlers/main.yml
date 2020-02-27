@@ -1,9 +1,9 @@
 ---
 - name: restart moloch capture
-  shell: "docker restart {{ moloch.name }}-capture"
+  shell: "docker restart {{ moloch_container_name }}-capture"
 
 - name: restart moloch viewer
-  shell: "docker restart {{ moloch.name }}-viewer"
+  shell: "docker restart {{ moloch_container_name }}-viewer"
 
 - name: restart moloch wise
-  shell: "docker restart {{ moloch.name }}-wise"
+  shell: "docker restart {{ moloch_container_name }}-wise"
