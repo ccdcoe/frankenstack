@@ -1,3 +1,4 @@
+---
 - name: pull kibana image
   docker_image:
     name: "{{ kibana_image }}"
@@ -7,19 +8,19 @@
 
 - name: Deploy docker containers for kibana in elastic cluster
   docker_container:
-    name: "{{ item.name }}-kibana-{{ groups[item.hostgroup].index(inventory_hostname) }}"
-    hostname: "{{ item.name }}-kibana-{{ groups[item.hostgroup].index(inventory_hostname) }}"
+    name: "{{ item.name }}-{{ item.node_id | mandatory }}-kibana"
+    hostname: "{{ item.name }}-{{ item.node_id | mandatory }}-kibana"
     image: "{{ kibana_image }}"
     purge_networks: yes
     state: started
     restart_policy: unless-stopped
-    networks:
-      - name: "{{ item.network }}"
+    network_mode: "{{ item.host_network | default(false) | ternary('host', 'bridge', 'none') }}"
+    networks: "{{ item.networks | default([]) }}"
     published_ports: "{{ item.expose_kibana | default([]) }}"
     env:
-      ELASTICSEARCH_HOSTS: "http://{{ item.name }}-{{ groups[item.hostgroup].index(inventory_hostname) }}:9200"
+      ELASTICSEARCH_HOSTS: "{{ item.kibana_elasticsearch_hosts | mandatory | join(',') }}"
   loop: "{{ elastic_clusters }}"
-  when: not item.singlehost and item.hostgroup in group_names
+  when: not item.singlehost and inventory_hostname in item.hosts | default([])
 
 - name: Deploy docker container for kibana node
   docker_container:
@@ -29,10 +30,10 @@
     purge_networks: yes
     state: started
     restart_policy: unless-stopped
-    networks:
-      - name: "{{ item.network }}"
+    networks: "{{ item.networks | default([]) }}"
     published_ports: "{{ item.expose_kibana | default([]) }}"
     env:
-      ELASTICSEARCH_HOSTS: "http://{{ item.name }}-0:9200"
+      ELASTICSEARCH_HOSTS: "{{ item.kibana_elasticsearch_hosts | mandatory | join(',') }}"
+      SERVER_HOST: 0.0.0.0
   loop: "{{ elastic_clusters }}"
   when: item.singlehost

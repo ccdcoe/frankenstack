@@ -4,9 +4,22 @@
 
 - name: Set up elastic database
   include_tasks: elasticsearch.yml
+  tags:
+    - elastic
 
-- name: Set up elastic templates
+- name: Set up elasticsearch
   include_tasks: elasticsearch-templates.yml
+  tags:
+    - elastic
 
-- name: Set up kibana interfaces
+- name: Set up kibana
   include_tasks: kibana.yml
+  when: not elastic_kibana_disable | default(false)
+  tags:
+    - kibana
+
+- name: Set up logstash
+  include_tasks: logstash.yml
+  when: not elastic_logstash_disable | default(false)
+  tags:
+    - logstash

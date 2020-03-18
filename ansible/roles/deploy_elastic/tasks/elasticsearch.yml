@@ -1,3 +1,4 @@
+---
 - name: pull elastic image
   docker_image:
     name: "{{ elasticsearch_image }}"
@@ -7,44 +8,36 @@
   register: result
   until: not result.failed
 
-- name: Create data volume for elastic
-  docker_volume:
-    name: "data-{{ item.name }}"
-    state: present
-  loop: "{{ elastic_clusters }}"
-  when: item.singlehost or ('hostgroup' in item and item.hostgroup in group_names) 
-
 # multi-cluster deploy - each host may run elastic containers for N clusters
 # host must be in elasticsearch hostgroup
 - name: Deploy docker containers for elastic cluster
   docker_container:
-    name: "{{ item.name }}-{{ groups[item.hostgroup].index(inventory_hostname) }}"
-    hostname: "{{ item.name }}-{{ groups[item.hostgroup].index(inventory_hostname) }}"
+    name: "{{ item.name }}-{{ item.node_id | mandatory }}-node"
+    hostname: "{{ item.name }}-{{ item.node_id | mandatory }}-node"
     image: "{{ elasticsearch_image }}"
     volumes:
-      - "data-{{ item.name }}:/usr/share/elasticsearch/data:rw"
+      - "{{ item.name }}-{{ item.node_id | mandatory }}-node-data:/usr/share/elasticsearch/data:rw"
     purge_networks: yes
     state: started
     restart_policy: unless-stopped
-    networks:
-      - name: "{{ item.network }}"
+    network_mode: "{{ item.host_network | default(false) | ternary('host', 'bridge', 'none') }}"
+    networks: "{{ item.networks | default([]) if not item.host_network | default(false) else [] }}"
     ulimits:
       - nofile:262144:262144
     published_ports: "{{ item.expose_elastic | default([]) }}"
     env:
-      discovery.seed_hosts: "{%set max=groups[item.hostgroup]|length%}{%for i in range(max)%}{{item.name}}-{{i}}{%if i < max-1%},{%endif%}{%endfor%}"
-      cluster.name: "{%if 'cluster_pretty' in item%}{{item.cluster_pretty}}{%else%}{{item.name}}{%endif%}"
-      cluster.initial_master_nodes: "{%set max=groups[item.hostgroup]|length%}{%for i in range(max)%}{{item.name}}-{{i}}{%if i < max-1%},{%endif%}{%endfor%}"
-      node.name: "{{ item.name }}-{{ groups[item.hostgroup].index(inventory_hostname) }}"
+      cluster.name: "{{ item.pretty | default(item.name | mandatory) }}"
+      cluster.initial_master_nodes: "{{ item.cluster_initial_master_nodes | mandatory | join(',') }}"
+      discovery.seed_hosts: "{{ item.discovery_seed_hosts | mandatory | join(',') }}"
+      node.name: "{{ item.node_id }}"
       node.master: "true"
       node.ingest: "true"
       node.data: "true"
-      node.attr.datacenter: "{{item.datacenter}}"
-      node.attr.box_type: "{%if 'class' in item%}{{item.class}}{%else%}hot{%endif%}"
-      cluster.routing.allocation.awareness.attributes: datacenter
-      ES_JAVA_OPTS: "-Xms{{item.memory_gb.node}}g -Xmx{{item.memory_gb.node}}g"
+      node.attr.datacenter: "{{ item.attr_datacenter | default('default') }}"
+      node.attr.box_type: "{{ item.attr_box_type | default('hot') }}"
+      ES_JAVA_OPTS: "-Xms{{ item.memory_gb.node }}g -Xmx{{ item.memory_gb.node }}g"
   loop: "{{ elastic_clusters }}"
-  when: not item.singlehost and item.hostgroup in group_names
+  when: not item.singlehost and inventory_hostname in item.hosts | default([])
 
 # Simple singlehost deploy, no cluster setup, no hostgroup check
 # Still a loop, so multiple elastics could be created, each functioning as a separate single-node cluster
@@ -58,13 +51,12 @@
     purge_networks: yes
     state: started
     restart_policy: unless-stopped
-    networks:
-      - name: "{{ item.network }}"
+    networks: "{{ item.networks | default([]) }}"
     ulimits:
       - nofile:262144:262144
     published_ports: "{{ item.expose_elastic | default([]) }}"
     env:
-      cluster.name: "{%if 'cluster_pretty' in item%}{{item.cluster_pretty}}{%else%}{{item.name}}{%endif%}"
+      cluster.name: "{{ item.pretty | default(item.name | mandatory) }}"
       node.name: "{{ item.name }}-0"
       node.master: "true"
       node.ingest: "true"
@@ -73,6 +65,3 @@
       ES_JAVA_OPTS: "-Xms{{item.memory_gb.node}}g -Xmx{{item.memory_gb.node}}g"
   when: item.singlehost
   loop: "{{ elastic_clusters }}"
-
-# TODO - loop deploy when single host should run multiple docker containers that belong to the same elastic cluster
-# useful when running a powerful server with more than 64gb RAM and elastic needs to be split to avoid ~30G Java heap problem

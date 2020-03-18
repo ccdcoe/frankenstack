@@ -2,9 +2,12 @@
 elastic_templates:
   core:
     index_patterns:
+    - filebeat-*
+    - winlogbeat-*
     - events-*
-    - rsyslog-*
-    - peek-*
+    - suricata-*
+    - logstash-*
+    - syslog-*
     mappings:
       dynamic_templates:
       - message_field:
@@ -38,10 +41,7 @@ elastic_templates:
   suricata:
     index_patterns:
     - '*-suricata-*'
-    - '*-meer-*'
-    - '*-meercat-*'
-    - '*-meerkat-*'
-    - '*-mob-*'
+    - suricata-*
     mappings:
       properties:
         dest_ip:
@@ -63,9 +63,8 @@ elastic_templates:
   windows:
     index_patterns:
     - '*-windows-*'
-    - '*-eventlog-*'
-    - '*-sysmon-*'
     - '*-winlogbeat-*'
+    - winlogbeat-*
     mappings:
       properties:
         Keywords:

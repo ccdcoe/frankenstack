@@ -1,21 +1,49 @@
-elasticsearch_image: "docker.elastic.co/elasticsearch/elasticsearch-oss:7.6.0"
-kibana_image: "docker.elastic.co/kibana/kibana-oss:7.6.0"
+elasticsearch_image: "docker.elastic.co/elasticsearch/elasticsearch-oss:7.6.1"
+kibana_image: "docker.elastic.co/kibana/kibana-oss:7.6.1"
+logstash_image: "docker.elastic.co/logstash/logstash-oss:7.6.1"
+
+elastic_cluster_0_hosts: "{{ groups[hostgroup | mandatory] | select('match', name_pattern | mandatory) | list }}"
+elastic_cluster_0_node_id: "node-{{ elastic_cluster_0_hosts.index(inventory_hostname) }}"
 
 elastic_clusters:
   - name: default-ela
+    node_id: "{{ elastic_cluster_0_node_id }}"
     cluster_pretty: josephine
+    cluster_initial_master_nodes:
+      - node-0
+      - node-1
+      - node-2
+    discovery_seed_hosts:
+      - default-ela-node-0:9300
+      - default-ela-node-1:9300
+      - default-ela-node-2:9300
     singlehost: false
-    hostgroup: worker
-    network: bridge
-    datacenter: default
-    class: hot
+    hosts: "{{ elastic_cluster_0_hosts }}"
+    host_network: false
+    networks:
+      - name: "{{ elastic_cluster_network | mandatory }}"
     proxy: http://localhost:9200
     manage_template: true
+    attr_datacenter: default
+    attr_box_type: hot
     memory_gb: 
       node: 4
+    kibana_elasticsearch_hosts:
+      - "http://default-ela-node-0:9200"
+      - "http://default-ela-node-1:9200"
+      - "http://default-ela-node-2:9200"
 
 elastic_template_settings:
   number_of_replicas: 1
   number_of_shards: 3
   refresh_interval: 30s
   routing.allocation.require.box_type: hot
+
+logstash:
+  name: default-logstash
+  deploy: true
+  enable: false
+  network: bridge
+  elastic_hosts:
+    - http://elastic:9200
+  expose: []

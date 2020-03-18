@@ -1,0 +1,43 @@
+---
+- set_fact:
+    logstash_container_name: "{{ logstash.name | mandatory }}-0"
+
+- name: Create host folders for logstash configs
+  file:
+    path: "{{ host_container_root | mandatory }}/{{ item }}"
+    state: directory
+    mode: 0755
+  loop:
+    - ""
+    - "{{ logstash.name }}/"
+
+- name: pull logstash image
+  docker_image:
+    name: "{{ logstash_image }}"
+    source: pull
+  retries: 15
+  delay: 2
+
+- name: Deploy logstash config
+  template:
+    src: logstash.j2
+    dest: "{{ host_container_root | mandatory }}/{{ logstash.name }}/000-logstash.conf"
+  notify:
+    - restart logstash
+
+- name: Deploy docker container for logstash
+  docker_container:
+    name: "{{ logstash_container_name }}"
+    hostname: "{{ logstash_container_name }}"
+    image: "{{ logstash_image }}"
+    purge_networks: yes
+    state: "{{ logstash.enable | default(false) | ternary('started', 'stopped', 'stopped') }}"
+    restart_policy: unless-stopped
+    networks: 
+      - name: "{{ logstash.network }}"
+    published_ports: "{{ logstash.expose | default([]) }}"
+    volumes:
+      - "{{ host_container_root | mandatory }}/{{ logstash.name }}/:/usr/share/logstash/pipeline/:ro"
+    env:
+      ES_JAVA_OPTS: "-Xms1g -Xmx1g"
+  when: logstash.deploy

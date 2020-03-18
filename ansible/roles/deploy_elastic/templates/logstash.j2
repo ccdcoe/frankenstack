@@ -1,0 +1,24 @@
+input {
+  beats {
+    port => 5044
+    tags => ["beat"]
+  }
+  syslog {
+    port => 1514
+    tags => ["syslog"]
+  }
+}
+output {
+  if "syslog" in [tags] {
+    elasticsearch {
+      hosts => {{ logstash.elastic_hosts | default(["http://localhost:9200"]) | to_json }}
+      index => "logstash-%{+YYYY.MM.dd.hh}" 
+    }
+  }
+  if "beat" in [tags] {
+    elasticsearch {
+      hosts => {{ logstash.elastic_hosts | default(["http://localhost:9200"]) | to_json }}
+      index => "%{[@metadata][beat]}-%{[@metadata][version]}-%{+YYYY.MM.dd.hh}" 
+    }
+  }
+}
