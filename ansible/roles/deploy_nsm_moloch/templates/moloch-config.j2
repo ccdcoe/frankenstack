@@ -1,14 +1,14 @@
 #jinja2: trim_blocks:False
 [default]
 elasticsearch={{ elasticsearch | mandatory | join(',') }}
-rotateIndex=daily
+rotateIndex={{ moloch.elastic_hourly | default(false) | ternary('hourly', 'daily', 'daily') }}
 
 httpRealm = Moloch
 passwordSecret = {{ moloch.secret }}
 interface= {{ moloch.interfaces | join(';') }}
-pcapDir = {{ moloch_internal_data_dir }}
+pcapDir = {{ moloch_internal_data_dir | default('/data/moloch/raw') }}
 
-maxFileSizeG = 12
+maxFileSizeG = {{ moloch.max_file_size_g | default(12) }}
 tcpTimeout = 600
 tcpSaveTimeout = 720
 udpTimeout = 30

@@ -64,6 +64,8 @@ moloch_custom_views:
 
 moloch:
   name: "{{moloch_prefix}}"
+  elastic_hourly: false
+  max_file_size_g: 12
   capture:
     elasticsearch: 
       - "moloch.ex"
