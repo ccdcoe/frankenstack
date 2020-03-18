@@ -126,7 +126,7 @@ elastic_clusters:
 
 suricata_filebeat_shipper:
   deploy: true
-  enabled: true
+  enabled: false
   paths:
     - "/var/log/suricata/alert.json"
   elastic:

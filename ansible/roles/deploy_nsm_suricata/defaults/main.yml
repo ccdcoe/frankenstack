@@ -3,7 +3,7 @@ host_container_root: /srv/docker-containers
 suricata_image: jasonish/suricata
 suricata_update_image: jasonish/suricata
 suricata_custom_shipper_image: markuskont/peek
-suricata_filebeat_shipper_image: docker.elastic.co/beats/filebeat-oss:7.6.1
+suricata_filebeat_shipper_image: docker.elastic.co/beats/filebeat:7.6.1
 
 suricata:
   name: default-suricata
@@ -29,7 +29,7 @@ suricata_rule_dir: /var/lib/suricata/rules
 
 suricata_filebeat_shipper:
   deploy: true
-  enabled: true
+  enabled: false
   paths:
     - "/var/log/suricata/*.json"
   elastic:
