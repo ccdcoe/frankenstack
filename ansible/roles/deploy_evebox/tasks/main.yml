@@ -11,7 +11,7 @@
   docker_container:
     name: "{{ evebox.name }}"
     image: "{{ evebox_image }}"
-    state: started
+    state: "{{ evebox.enable | default(true) | ternary('started', 'stopped', 'stopped') }}"
     restart_policy: unless-stopped
     networks: 
       - name: "{{ evebox.network }}"
