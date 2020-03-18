@@ -364,3 +364,24 @@ suricata_update_config:
   sources: "{{ suricata.rule.sources }}"
   local: []
   disable-conf: /etc/disable.conf
+
+suricata_filebeat_config:
+  filebeat.modules:
+  - module: suricata
+    eve:
+      enabled: true
+      var.paths: "{{ suricata_filebeat_shipper.paths }}"
+
+  output.elasticsearch:
+    hosts: "{{ suricata_filebeat_shipper.elastic.hosts }}"
+    index: "{{ suricata_filebeat_shipper.elastic.index_pattern }}-%{+yyyy.MM.dd{%if suricata_filebeat_shipper.elastic.hourly%}.hh{%endif%}}"
+    bulk_max_size: 1000
+
+  logging.level: info
+
+  setup.template:
+    name: "{{ suricata_filebeat_shipper.elastic.index_pattern }}"
+    pattern: '{{ suricata_filebeat_shipper.elastic.index_pattern }}-*'
+    enabled: true
+
+  setup.ilm.enabled: false

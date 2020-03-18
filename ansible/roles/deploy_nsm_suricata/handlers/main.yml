@@ -1,3 +1,6 @@
 ---
 - name: restart suricata
   shell: "docker restart {{ suricata_container_name }}"
+
+- name: restart suricata filebeat
+  shell: "docker restart {{ suricata_filebeat_container_name }}"

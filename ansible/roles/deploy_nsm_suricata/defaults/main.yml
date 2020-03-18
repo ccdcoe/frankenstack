@@ -2,16 +2,12 @@
 host_container_root: /srv/docker-containers
 suricata_image: jasonish/suricata
 suricata_update_image: jasonish/suricata
-suricata_shipper_image: markuskont/peek
+suricata_custom_shipper_image: markuskont/peek
+suricata_filebeat_shipper_image: docker.elastic.co/beats/filebeat:7.6.1
 
 suricata:
   name: default-suricata
   sensor_name: default-suricata
-  global_log_socket: suricata-events.socket
-  kafka:
-    topic: default-suricata
-    brokers: []
-  interface: ens192
   rule:
     sources:
       - https://rules.emergingthreats.net/open/suricata-5.0/emerging.rules.tar.gz
@@ -31,9 +27,34 @@ suricata_log_dir: /var/log/suricata
 suricata_socket_dir: /var/run/suricata
 suricata_rule_dir: /var/lib/suricata/rules
 
+suricata_filebeat_shipper:
+  deploy: true
+  enabled: true
+  paths:
+    - "/var/log/suricata/*.json"
+  elastic:
+    hourly: "{{ suricata_index_pattern_hourly | default(false) }}"
+    index_pattern: "{{ suricata_elastic_index | default('events-suricata') }}"
+    hosts: "{{ suricata_elastic_hosts | default(['http://elastic:9200']) }}"
+
+suricata_peek_shipper:
+  deploy: true
+  enabled: false
+  socket_name: suricata-events.socket
+  kafka:
+    enabled: false
+    topic: suri
+    brokers:
+      - kafka:9092
+  elastic:
+    enabled: true
+    hourly: "{{ suricata_index_pattern_hourly | default(false) }}"
+    index: "{{ suricata_elastic_index  | default('events-suricata') }}"
+    hosts: "{{ suricata_elastic_hosts | default(['http://elastic:9200']) }}"
+
 suricata_af_packet:
-  - interface: "{{ suricata.interface }}"
-    threads: 1
+  - interface: ens192
+    threads: auto
     cluster-id: 99
     cluster-type: cluster_flow
     defrag: yes
