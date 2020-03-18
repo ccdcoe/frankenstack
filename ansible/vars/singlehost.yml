@@ -104,32 +104,58 @@ elastic_template_settings:
   number_of_shards: 1
   refresh_interval: 30s
 
+elastic_external_proxy: "http://{{ elastic_ext_host }}:{{elastic_ext_port}}"
+elastic_internal_proxy: "http://{{ prefix }}-elastic-0:9200"
+
 elastic_clusters:
   - name: "{{prefix}}-elastic"
-    network: "{{prefix}}-network"
+    networks:
+      - name: "{{ prefix }}-network"
     singlehost: true
-    proxy: "http://{{elastic_ext_host}}:{{elastic_ext_port}}"
+    proxy: "{{ elastic_external_proxy }}"
     manage_template: true
+    host_network: false
     memory_gb: 
       node: "{{ elastic_heap_size_gb }}"
     expose_elastic:
-        - "127.0.0.1:{{ elastic_ext_port }}:9200"
+      - "127.0.0.1:{{ elastic_ext_port }}:9200"
     expose_kibana:
-        - "{{ kibana_ext_port }}:5601"
+      - "{{ kibana_ext_port }}:5601"
+    kibana_elasticsearch_hosts:
+      - "http://{{ prefix }}-elastic:9200"
+
+suricata_filebeat_shipper:
+  deploy: true
+  enabled: true
+  paths:
+    - "/var/log/suricata/alert.json"
+  elastic:
+    hourly: true
+    index_pattern: filebeat
+    hosts:
+      - "{{ elastic_external_proxy }}"
+
+suricata_peek_shipper:
+  deploy: true
+  enabled: true
+  socket_name: "{{ suricata_socket_file }}"
+  elastic:
+    enabled: true
+    hourly: false
+    index: events-suricata
+    hosts:
+      - "{{ elastic_external_proxy }}"
 
 suricata_bypass_encryption: true
 suricata_socket_file: suricata-events.socket
+
 suricata:
   name: "{{prefix}}-suricata"
   sensor_name: "{{prefix}}-suricata"
-  global_log_socket: "{{ suricata_socket_file }}"
-  elastic:
-    hosts:
-      - "http://127.0.0.1:{{elastic_ext_port}}"
-    index: events-suricata
   rule:
     sources: "{{ suricata_rule_sources }}"
     disable: "{{ suricata_rule_disable }}"
+
 suricata_base_eve_types:
   - alert:
       payload: yes
@@ -171,7 +197,7 @@ suricata_eve_log:
   - eve-log:
       enabled: yes
       filetype: unix_stream
-      filename: "/var/lib/peek/{{suricata_socket_file}}"
+      filename: "/var/lib/peek/{{ suricata_socket_file }}"
       pcap-file: false
       community-id: true
       community-id-seed: 0
@@ -255,10 +281,10 @@ moloch:
 
 evebox:
   name: "{{ prefix }}-evebox"
-  elastic: "http://{{ prefix }}-elastic-0:9200"
-  network: "{{ prefix }}-network"
-  index: "{{ suricata.elastic.index }}"
+  enable: true
+  elastic: "{{ elastic_internal_proxy }}"
+  network: "{{ docker_networks[0].name }}"
+  index: "{{ suricata_peek_shipper.elastic.index }}"
   keyword: keyword
   expose:
     - 5636:5636
-

@@ -5,6 +5,9 @@ logstash_image: "docker.elastic.co/logstash/logstash-oss:7.6.1"
 elastic_cluster_0_hosts: "{{ groups[hostgroup | mandatory] | select('match', name_pattern | mandatory) | list }}"
 elastic_cluster_0_node_id: "node-{{ elastic_cluster_0_hosts.index(inventory_hostname) }}"
 
+elastic_logstash_disable: true
+elastic_kibana_disable: false
+
 elastic_clusters:
   - name: default-ela
     node_id: "{{ elastic_cluster_0_node_id }}"
