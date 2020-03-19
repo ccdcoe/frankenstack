@@ -122,7 +122,7 @@ elastic_clusters:
     expose_kibana:
       - "{{ kibana_ext_port }}:5601"
     kibana_elasticsearch_hosts:
-      - "http://{{ prefix }}-elastic:9200"
+      - "http://{{ prefix }}-elastic-0:9200"
 
 suricata_filebeat_shipper:
   deploy: true

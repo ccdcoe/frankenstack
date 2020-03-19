@@ -23,3 +23,11 @@
   when: not elastic_logstash_disable | default(false)
   tags:
     - logstash
+
+- name: set up beat dashboards
+  include_tasks: beats-setup.yml
+  when: not elastic_kibana_disable | default(false) and elastic_beat_setup
+  tags:
+    - kibana
+    - siem
+    - beats
