@@ -12,11 +12,11 @@
 # host must be in elasticsearch hostgroup
 - name: Deploy docker containers for elastic cluster
   docker_container:
-    name: "{{ item.name }}-{{ item.node_id | mandatory }}-node"
-    hostname: "{{ item.name }}-{{ item.node_id | mandatory }}-node"
-    image: "{{ elasticsearch_image }}"
+    name: "{{ elastic_container_name }}"
+    hostname: "{{ elastic_container_name }}"
+    image: "{{ item.image | default(elasticsearch_image) }}"
     volumes:
-      - "{{ item.name }}-{{ item.node_id | mandatory }}-node-data:/usr/share/elasticsearch/data:rw"
+      - "{{ elastic_container_name }}-data:/usr/share/elasticsearch/data:rw"
     purge_networks: yes
     state: started
     restart_policy: unless-stopped
@@ -29,7 +29,7 @@
       cluster.name: "{{ item.pretty | default(item.name | mandatory) }}"
       cluster.initial_master_nodes: "{{ item.cluster_initial_master_nodes | mandatory | join(',') }}"
       discovery.seed_hosts: "{{ item.discovery_seed_hosts | mandatory | join(',') }}"
-      node.name: "{{ item.node_id }}"
+      node.name: "{{ elastic_node_id }}"
       node.master: "true"
       node.ingest: "true"
       node.data: "true"
@@ -37,17 +37,20 @@
       node.attr.box_type: "{{ item.attr_box_type | default('hot') }}"
       ES_JAVA_OPTS: "-Xms{{ item.memory_gb.node }}g -Xmx{{ item.memory_gb.node }}g"
   loop: "{{ elastic_clusters }}"
+  vars:
+    elastic_node_id: "{{ item.node_id | mandatory }}"
+    elastic_container_name: "{{ item.name }}-{{ elastic_node_id }}-node"
   when: not item.singlehost and inventory_hostname in item.hosts | default([])
 
 # Simple singlehost deploy, no cluster setup, no hostgroup check
 # Still a loop, so multiple elastics could be created, each functioning as a separate single-node cluster
 - name: Deploy docker container for elastic node
   docker_container:
-    name: "{{ item.name }}-0"
-    hostname: "{{ item.name }}-0"
-    image: "{{ elasticsearch_image }}"
+    name: "{{ elastic_container_name }}"
+    hostname: "{{ elastic_container_name }}"
+    image: "{{ item.image | default(elasticsearch_image) }}"
     volumes:
-      - "data-{{ item.name }}:/usr/share/elasticsearch/data:rw"
+      - "{{ elastic_container_name }}-data:/usr/share/elasticsearch/data:rw"
     purge_networks: yes
     state: started
     restart_policy: unless-stopped
@@ -57,11 +60,14 @@
     published_ports: "{{ item.expose_elastic | default([]) }}"
     env:
       cluster.name: "{{ item.pretty | default(item.name | mandatory) }}"
-      node.name: "{{ item.name }}-0"
+      node.name: "{{ elastic_node_id }}"
       node.master: "true"
       node.ingest: "true"
       node.data: "true"
       discovery.type: single-node
       ES_JAVA_OPTS: "-Xms{{item.memory_gb.node}}g -Xmx{{item.memory_gb.node}}g"
   when: item.singlehost
+  vars:
+    elastic_node_id: "{{ item.node_id | default(0) }}"
+    elastic_container_name: "{{ item.name }}-{{ elastic_node_id }}-node"
   loop: "{{ elastic_clusters }}"

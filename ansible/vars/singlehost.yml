@@ -105,7 +105,7 @@ elastic_template_settings:
   refresh_interval: 30s
 
 elastic_external_proxy: "http://{{ elastic_ext_host }}:{{elastic_ext_port}}"
-elastic_internal_proxy: "http://{{ prefix }}-elastic-0:9200"
+elastic_internal_proxy: "http://{{ prefix }}-elastic-0-node:9200"
 
 elastic_clusters:
   - name: "{{prefix}}-elastic"
@@ -122,7 +122,7 @@ elastic_clusters:
     expose_kibana:
       - "{{ kibana_ext_port }}:5601"
     kibana_elasticsearch_hosts:
-      - "http://{{ prefix }}-elastic-0:9200"
+      - "{{ elastic_internal_proxy }}"
 
 suricata_filebeat_shipper:
   deploy: true
@@ -247,16 +247,16 @@ moloch_users:
 
 moloch_prefix: "{{prefix}}-owl"
 moloch:
-  name: "{{moloch_prefix}}"
+  name: "{{ moloch_prefix }}"
   capture:
     elasticsearch: 
-    - "http://localhost:{{ elastic_ext_port }}"
+    - "{{ elastic_external_proxy }}"
     wise:
       port: "{{ moloch_wise_ext_port }}"
       host: "127.0.0.1"
   viewer:
     elasticsearch: 
-    - "http://{{ prefix }}-elastic-0:9200"
+    - "{{ elastic_internal_proxy }}"
     network: "{{ prefix }}-network"
     wise:
       port: 8081

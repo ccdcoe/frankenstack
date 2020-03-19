@@ -8,8 +8,8 @@
 
 - name: Deploy docker containers for kibana in elastic cluster
   docker_container:
-    name: "{{ item.name }}-{{ item.node_id | mandatory }}-kibana"
-    hostname: "{{ item.name }}-{{ item.node_id | mandatory }}-kibana"
+    name: "{{ kibana_container_name }}"
+    hostname: "{{ kibana_container_name }}"
     image: "{{ kibana_image }}"
     purge_networks: yes
     state: started
@@ -20,20 +20,7 @@
     env:
       ELASTICSEARCH_HOSTS: "{{ item.kibana_elasticsearch_hosts | mandatory | join(',') }}"
   loop: "{{ elastic_clusters }}"
-  when: not item.singlehost and inventory_hostname in item.hosts | default([])
-
-- name: Deploy docker container for kibana node
-  docker_container:
-    name: "{{ item.name }}-kibana-0"
-    hostname: "{{ item.name }}-kibana-0"
-    image: "{{ kibana_image }}"
-    purge_networks: yes
-    state: started
-    restart_policy: unless-stopped
-    networks: "{{ item.networks | default([]) }}"
-    published_ports: "{{ item.expose_kibana | default([]) }}"
-    env:
-      ELASTICSEARCH_HOSTS: "{{ item.kibana_elasticsearch_hosts | mandatory | join(',') }}"
-      SERVER_HOST: 0.0.0.0
-  loop: "{{ elastic_clusters }}"
-  when: item.singlehost
+  vars:
+    elastic_node_id: "{{ '0' if item.singlehost | default(false) else item.node_id | mandatory }}"
+    kibana_container_name: "{{ item.name }}-{{ elastic_node_id }}-kibana"
+  when: item.singlehost | default(false) or inventory_hostname in item.hosts | default([])

@@ -1,1 +1,18 @@
 ---
+
+- name: Create host folders for beat configs
+  file:
+    path: "{{ host_container_root | mandatory }}/{{ item.name }}"
+    state: directory
+    mode: 0755
+  loop: "{{ elastic_clusters }}"
+
+- name: Create filebeat configs
+  template:
+    src: beat.j2
+    dest: "{{ host_container_root | mandatory }}/{{ item.name }}/filebeat.yml"
+  loop: "{{ elastic_clusters }}"
+  vars:
+    elastic_beats_kibana_host: "{{ item.name }}"
+    elastic_beats_ela_out_host: "TODO"
+    structured_data: "{{ elastic_filebeat_config }}"

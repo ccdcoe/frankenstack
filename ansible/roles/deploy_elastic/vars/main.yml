@@ -77,3 +77,9 @@ elastic_templates:
           type: text
     order: 15
     version: 0
+
+elastic_filebeat_config:
+  setup.kibana:
+    host: "{{ elastic_beats_kibana_host | mandatory }}"
+  output.elasticsearch:
+    hosts: "{{ elastic_beats_ela_out_host | mandatory }}"

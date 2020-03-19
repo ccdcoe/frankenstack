@@ -1,9 +1,12 @@
 elastic_oss: true
 elastic_beat_setup: "{{ not elastic_oss }}"
+elastic_version: 7.6.1
 
-elasticsearch_image: "docker.elastic.co/elasticsearch/elasticsearch{{ '-oss' if elastic_oss else '' }}:7.6.1"
-kibana_image: "docker.elastic.co/kibana/kibana{{ '-oss' if elastic_oss else '' }}:7.6.1"
-logstash_image: "docker.elastic.co/logstash/logstash{{ '-oss' if elastic_oss else '' }}:7.6.1"
+elasticsearch_image: "docker.elastic.co/elasticsearch/elasticsearch{{ '-oss' if elastic_oss else '' }}:{{ elastic_version }}"
+kibana_image: "docker.elastic.co/kibana/kibana{{ '-oss' if elastic_oss else '' }}:{{ elastic_version }}"
+logstash_image: "docker.elastic.co/logstash/logstash{{ '-oss' if elastic_oss else '' }}:{{ elastic_version }}"
+logstash_filebeat_image: "docker.elastic.co/beats/filebeat{{ '-oss' if elastic_oss else '' }}:{{ elastic_version }}"
+logstash_auditbeat_image: "docker.elastic.co/beats/auditbeat{{ '-oss' if elastic_oss else '' }}:{{ elastic_version }}"
 
 elastic_cluster_0_hosts: "{{ groups[hostgroup | mandatory] | select('match', name_pattern | mandatory) | list }}"
 elastic_cluster_0_node_id: "node-{{ elastic_cluster_0_hosts.index(inventory_hostname) }}"
