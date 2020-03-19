@@ -27,6 +27,7 @@ kibana_ext_port: 5601
 # can be limited to localhost, but is needed for pushing templates, etc.
 elastic_ext_host: 127.0.0.1
 elastic_heap_size_gb: 2
+elastic_oss: false
 
 # Uncomment following lines to use non open-source images
 # elasticsearch_image: "docker.elastic.co/elasticsearch/elasticsearch:7.6.0"
@@ -126,7 +127,7 @@ elastic_clusters:
 
 suricata_filebeat_shipper:
   deploy: true
-  enabled: false
+  enabled: "{{ not elastic_oss }}"
   paths:
     - "/var/log/suricata/alert.json"
   elastic:
