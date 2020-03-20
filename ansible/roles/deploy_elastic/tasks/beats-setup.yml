@@ -1,5 +1,4 @@
 ---
-
 - name: Create host folders for beat configs
   file:
     path: "{{ host_container_root | mandatory }}/{{ item.name }}"
@@ -13,6 +12,34 @@
     dest: "{{ host_container_root | mandatory }}/{{ item.name }}/filebeat.yml"
   loop: "{{ elastic_clusters }}"
   vars:
-    elastic_beats_kibana_host: "{{ item.name }}"
-    elastic_beats_ela_out_host: "TODO"
+    elastic_node_id: "{{ '0' if item.singlehost | default(false) else item.node_id | mandatory }}"
+    elastic_container_name: "{{ item.name }}-{{ elastic_node_id }}-node"
+    elastic_internal_host: "http://{{ elastic_container_name }}:9200"
+    elastic_external_host: "http://127.0.0.1:9200"
+    kibana_container_name: "{{ item.name }}-{{ elastic_node_id }}-kibana"
+    kibana_internal_host: "http://{{ kibana_container_name }}:5601"
+    kibana_external_host: "http://127.0.0.1:5601"
+    elastic_beats_kibana_host: "{{ kibana_external_host if item.host_network | default(false) else kibana_internal_host }}"
+    elastic_beats_ela_out_host: "{{ elastic_external_host if item.host_network | default(false) else elastic_internal_host }}"
     structured_data: "{{ elastic_filebeat_config }}"
+
+- name: Set up filebeat dashboards
+  docker_container:
+    name: "{{ item.name }}-filebeat-dashboard-setup"
+    image: "{{ filebeat_image }}"
+    networks: "{{ item.networks }}"
+    network_mode: "{{ item.host_network | default(false) | ternary('host', 'bridge', 'none') }}"
+    volumes:
+      - "{{ host_container_root | mandatory }}/{{ item.name }}/filebeat.yml:/etc/filebeat.yml:ro"
+    command: "-c /etc/filebeat.yml setup --dashboards"
+    detach: no
+    auto_remove: yes
+  register: filebeat_dashboard_setup
+  loop: "{{ elastic_clusters }}"
+  run_once: true
+
+- name: Filebeat cleanup
+  docker_container:
+    name: "{{ item.name }}-filebeat-dashboard-setup"
+    state: absent
+  loop: "{{ elastic_clusters }}"

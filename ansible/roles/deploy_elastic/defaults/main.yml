@@ -1,19 +1,49 @@
+# Use open-source images
 elastic_oss: true
+# Set up kibana dashboards for beats family
+# Only available when using non-oss images
 elastic_beat_setup: "{{ not elastic_oss }}"
+
+# Global version string
+# Make sure to keep it it sync when overriding individual images
 elastic_version: 7.6.1
 
+# Individual elastic images
 elasticsearch_image: "docker.elastic.co/elasticsearch/elasticsearch{{ '-oss' if elastic_oss else '' }}:{{ elastic_version }}"
 kibana_image: "docker.elastic.co/kibana/kibana{{ '-oss' if elastic_oss else '' }}:{{ elastic_version }}"
 logstash_image: "docker.elastic.co/logstash/logstash{{ '-oss' if elastic_oss else '' }}:{{ elastic_version }}"
-logstash_filebeat_image: "docker.elastic.co/beats/filebeat{{ '-oss' if elastic_oss else '' }}:{{ elastic_version }}"
-logstash_auditbeat_image: "docker.elastic.co/beats/auditbeat{{ '-oss' if elastic_oss else '' }}:{{ elastic_version }}"
+filebeat_image: "docker.elastic.co/beats/filebeat{{ '-oss' if elastic_oss else '' }}:{{ elastic_version }}"
+auditbeat_image: "docker.elastic.co/beats/auditbeat{{ '-oss' if elastic_oss else '' }}:{{ elastic_version }}"
+packetbeat_image: "docker.elastic.co/beats/packetbeat{{ '-oss' if elastic_oss else '' }}:{{ elastic_version }}"
 
+# Reference on generating host list for elastic cluster deploy
+# One might need to install multiple cluster, each on a subset of hosts
 elastic_cluster_0_hosts: "{{ groups[hostgroup | mandatory] | select('match', name_pattern | mandatory) | list }}"
+# Each elastic cluster node and docker image needs to have a unique identifier
+# This example appends host list array index as numeric ID
+# Cluster name will be prepended to this value to generate container name, so same variable could be used for multiple clusters
+# Node name will remain as-is, so make sure you are not colliding container names
 elastic_cluster_0_node_id: "node-{{ elastic_cluster_0_hosts.index(inventory_hostname) }}"
 
+# Disable logstash and kibana globally
+# Packaging them with singlehost deploy makes sense, but cluster might have dedicated hosts for them
 elastic_logstash_disable: true
 elastic_kibana_disable: false
 
+# List of elastic clusters to deploy
+# Ensure that each cluster has distinct name
+# Ensure that node_id is generated dynamically, see elastic_cluster_0_node_id as a reference
+# Static value as node id will result in name collisions
+# Values for seed_hosts and initial_master_nodes should be set manually
+# They will be used for bootstrap and intialization of new nodes
+# Proxy value will be used for intializing templates and other API configs
+# Make sure that address is accessible from remote ansible host
+# Node can be bound to host network if elastic is deployed inside properly firewalled network
+# Networks value shoud be an empty array [], as host network mode is mutually exclusive with docker networks parameter
+# This role does not support configuring elastic ports yet, so only one cluster can be deployed on host network
+# expose_elastic values should be unique to each cluster, as each host can run nodes from multiple clusters, leading to port conflicts
+# Alternatively, a better way would be to set up docker swarm to use overlay network
+# This needs to be set up prior to elastic deploy
 elastic_clusters:
   - name: default-ela
     node_id: "{{ elastic_cluster_0_node_id }}"
@@ -23,14 +53,17 @@ elastic_clusters:
       - node-1
       - node-2
     discovery_seed_hosts:
-      - default-ela-node-0:9300
-      - default-ela-node-1:9300
-      - default-ela-node-2:9300
+      - default-ela-node-0:9301
+      - default-ela-node-1:9301
+      - default-ela-node-2:9301
     singlehost: false
     hosts: "{{ elastic_cluster_0_hosts }}"
     host_network: false
     networks:
       - name: "{{ elastic_cluster_network | mandatory }}"
+    expose_elastic:
+      - 9201:9200
+      - 9301:9300
     proxy: http://localhost:9200
     manage_template: true
     attr_datacenter: default
