@@ -135,7 +135,6 @@
     state: started
     network_mode: host
     restart_policy: unless-stopped
-    privileged: yes 
     capabilities:
       - net_admin
       - sys_nice
@@ -144,6 +143,7 @@
     env:
       PUID: "61000"
       PGID: "61000"
+  register: suricata_container_update
 
 - name: Deploy suricata rules
   docker_container:
@@ -176,7 +176,7 @@
     volumes:
       - "{{ host_container_root }}/{{ suricata.name }}/config/suricata.yaml:/etc/suricata/suricata.yaml:ro"
       - "sockets-{{ suricata.name }}:{{ suricata_socket_dir }}:rw"
-  when: not suricata_config_updated.changed and not docker_pull.changed
+  when: not suricata_config_updated.changed and not docker_pull.changed and not suricata_container_update.changed
   tags:
     - suricata-rule-update
 
