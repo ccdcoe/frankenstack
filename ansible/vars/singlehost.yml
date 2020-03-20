@@ -128,7 +128,7 @@ suricata_filebeat_shipper:
   deploy: true
   enabled: "{{ not elastic_oss }}"
   paths:
-    - "/var/log/suricata/alert.json"
+    - "/var/log/suricata/*.json"
   elastic:
     hourly: true
     index_pattern: filebeat
@@ -156,7 +156,7 @@ suricata:
     sources: "{{ suricata_rule_sources }}"
     disable: "{{ suricata_rule_disable }}"
 
-suricata_base_eve_types:
+suricata_base_eve_only_alert:
   - alert:
       payload: yes
       payload-buffer-size: 4kb
@@ -166,6 +166,8 @@ suricata_base_eve_types:
       http-body: yes
       http-body-printable: yes
       tagged-packets: yes
+
+suricata_base_eve_events:
   - anomaly:
       enabled: yes
       types:
@@ -193,6 +195,11 @@ suricata_base_eve_types:
   - ssh
   - flow
 
+surcata_base_eve_stats:
+  - stats
+
+suricata_base_eve_protos_and_alerts: "{{ suricata_base_eve_only_alert + suricata_base_eve_events }}"
+
 suricata_eve_log:
   - eve-log:
       enabled: yes
@@ -206,7 +213,7 @@ suricata_eve_log:
         mode: extra-data
         deployment: reverse
         header: X-Forwarded-For
-      types: "{{ suricata_base_eve_types }}"
+      types: "{{ suricata_base_eve_protos_and_alerts }}"
   - eve-log:
       enabled: yes
       filetype: regular
@@ -219,16 +226,20 @@ suricata_eve_log:
         mode: extra-data
         deployment: reverse
         header: X-Forwarded-For
-      types:
-        - alert:
-            payload: no
-            payload-buffer-size: 4kb
-            payload-printable: no
-            packet: no
-            metadata: yes
-            http-body: no
-            http-body-printable: no
-            tagged-packets: no
+      types: "{{ suricata_base_eve_only_alert }}"
+  - eve-log:
+      enabled: yes
+      filetype: regular
+      filename: eve.json
+      pcap-file: false
+      community-id: true
+      community-id-seed: 0
+      xff:
+        enabled: yes
+        mode: extra-data
+        deployment: reverse
+        header: X-Forwarded-For
+      types: "{{ suricata_base_eve_events + surcata_base_eve_stats }}"
 
 moloch_wise_config:
   reversedns:
