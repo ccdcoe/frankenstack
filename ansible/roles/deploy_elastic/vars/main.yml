@@ -83,3 +83,13 @@ elastic_filebeat_config:
     host: "{{ elastic_beats_kibana_host | mandatory }}"
   output.elasticsearch:
     hosts: "{{ elastic_beats_ela_out_host | mandatory }}"
+
+elastic_auditbeat_modules:
+  auditbeat.modules:
+  - module: file_integrity
+    paths:
+    - /bin
+    - /usr/bin
+    - /sbin
+    - /usr/sbin
+    - /etc
