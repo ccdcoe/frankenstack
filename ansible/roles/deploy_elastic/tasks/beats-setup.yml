@@ -33,8 +33,11 @@
       - "{{ host_container_root | mandatory }}/{{ item.name }}/filebeat.yml:/etc/filebeat.yml:ro"
     command: "-c /etc/filebeat.yml setup --dashboards"
     detach: no
-    auto_remove: yes
+    auto_remove: no
   register: filebeat_dashboard_setup
+  retries: 6
+  delay: 10
+  until: not filebeat_dashboard_setup.failed
   loop: "{{ elastic_clusters }}"
   run_once: true
 
