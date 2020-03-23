@@ -18,4 +18,4 @@
     volumes:
       - "{{ zeek.name }}-{{ item }}-data:/pcap:ro"
       - "{{ host_container_root | mandatory }}/{{ zeek.name }}/filebeat.yml:/etc/filebeat.yml:ro"
-  loop: "{{ zeek.af_packet }}"
+  loop: "{{ zeek.interfaces }}"

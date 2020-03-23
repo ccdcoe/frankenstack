@@ -25,4 +25,4 @@
       - "{{ zeek.name }}-{{ item }}-data:/pcap:rw"
       - "{{ host_container_root | mandatory }}/{{ zeek.name }}/local.zeek:/usr/local/zeek/share/zeek/site/local.zeek:ro"
     command: "-C -i {{ item }} local"
-  loop: "{{ zeek.af_packet | mandatory }}"
+  loop: "{{ zeek.interfaces | mandatory }}"

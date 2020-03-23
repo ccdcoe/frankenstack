@@ -23,4 +23,4 @@
   include_tasks: filebeat.yml
   tags:
     - zeek
-  when: zeek.af_packet is defined and zeek.af_packet | length > 0
+  when: zeek.interfaces is defined and zeek.interfaces | length > 0

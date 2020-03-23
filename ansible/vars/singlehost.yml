@@ -62,7 +62,7 @@ zeek_capture_interfaces: "{{ moloch_capture_interfaces }}"
 zeek:
   name: "{{ prefix }}-zeek"
   enable: true
-  af_packet: "{{ zeek_capture_interfaces }}"
+  interfaces: "{{ zeek_capture_interfaces }}"
 
 zeek_filebeat_shipper:
   enable: true

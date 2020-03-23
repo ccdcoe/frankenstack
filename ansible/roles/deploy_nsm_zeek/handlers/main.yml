@@ -1,8 +1,8 @@
 ---
 - name: restart zeek
   command: "docker restart {{ zeek.name }}-sensor-{{ item }}"
-  loop: "{{ zeek.af_packet | mandatory }}"
+  loop: "{{ zeek.interfaces | mandatory }}"
 
 - name: restart zeek filebeat
   command: "docker restart {{ zeek.name }}-shipper-filebeat-{{ item }}"
-  loop: "{{ zeek.af_packet | mandatory }}"
+  loop: "{{ zeek.interfaces | mandatory }}"

@@ -5,7 +5,7 @@ zeek_filebeat_shipper_image: "docker.elastic.co/beats/filebeat:{{ elastic_versio
 zeek:
   name: default-zeek
   enable: true
-  af_packet: 
+  interfaces: 
     - eth0
     - eth1
 
