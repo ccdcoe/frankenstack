@@ -1,0 +1,26 @@
+---
+- name: pull images
+  docker_image:
+    name: "{{ item }}"
+    source: pull
+    force_source: yes
+  retries: 15
+  delay: 2
+  register: docker_pull
+  until: not docker_pull.failed
+  loop:
+    - "{{ zeek_image }}"
+    - "{{ zeek_filebeat_shipper_image }}"
+  tags:
+    - pull
+
+- name: set up zeek sensors
+  include_tasks: zeek.yml
+  tags:
+    - zeek
+
+- name: set up filebeat shippers
+  include_tasks: filebeat.yml
+  tags:
+    - zeek
+  when: zeek.af_packet is defined and zeek.af_packet | length > 0

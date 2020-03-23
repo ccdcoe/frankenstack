@@ -56,6 +56,22 @@ suricata_af_packet: "{{ suricata_af_packet_interfaces + suricata_af_packet_defau
 
 # to be used together with suricata_af_packet, as moloch only needs a semicolon-separated list of capture interfaces, while meerkat also needs a unique cluster-id for each value
 moloch_capture_interfaces: "{{ suricata_af_packet_interfaces | map(attribute='interface')| list }}"
+# Uses a list just like moloch, but separate variable to make usage explicit
+zeek_capture_interfaces: "{{ moloch_capture_interfaces }}"
+
+zeek:
+  name: "{{ prefix }}-zeek"
+  enable: true
+  af_packet: "{{ zeek_capture_interfaces }}"
+
+zeek_filebeat_shipper:
+  enable: true
+  paths: "/pcap/*log"
+  elastic:
+    hosts:
+      - http://localhost:9200
+    index_pattern: filebeat
+    hourly: true
 
 # Modify with network addresses that you wish to modify
 # Affects both suricata and moloch (reverse dns asset decoration)

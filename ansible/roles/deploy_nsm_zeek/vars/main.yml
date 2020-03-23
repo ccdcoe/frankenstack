@@ -1,0 +1,130 @@
+---
+zeek_filebeat_config:
+  filebeat.modules:
+  - module: zeek
+    capture_loss:
+      enabled: true
+      var.paths:
+        - /pcap/capture_loss*.log
+    dce_rpc:
+      enabled: true
+      var.paths:
+        - /pcap/dce_rpc*.log
+    dhcp:
+      enabled: true
+      var.paths:
+        - /pcap/dhcp*.log
+    dpd:
+      enabled: true
+      var.paths:
+        - /pcap/dpd*.log
+    ftp:
+      enabled: true
+      var.paths:
+        - /pcap/ftp*.log
+    irc:
+      enabled: true
+      var.paths:
+        - /pcap/irc*.log
+    kerberos:
+      enabled: true
+      var.paths:
+        - /pcap/kerberos*.log
+    modbus:
+      enabled: true
+      var.paths:
+        - /pcap/modbus*.log
+    mysql:
+      enabled: true
+      var.paths:
+        - /pcap/mysql*.log
+    ntlm:
+      enabled: true
+      var.paths:
+        - /pcap/ntlm*.log
+    radius:
+      enabled: true
+      var.paths:
+        - /pcap/radius*.log
+    rdp:
+      enabled: true
+      var.paths:
+        - /pcap/rdp*.log
+    rfb:
+      enabled: true
+      var.paths:
+        - /pcap/rfb*.log
+    sip:
+      enabled: true
+      var.paths:
+        - /pcap/sip*.log
+    smb_cmd:
+      enabled: true
+      var.paths:
+        - /pcap/smb_cmd*.log
+    smb_files:
+      enabled: true
+      var.paths:
+        - /pcap/smb_files*.log
+    smtp:
+      enabled: true
+      var.paths:
+        - /pcap/smtp*.log
+    snmp:
+      enabled: true
+      var.paths:
+        - /pcap/snmp*.log
+    socks:
+      enabled: true
+      var.paths:
+        - /pcap/socks*.log
+    ssh:
+      enabled: true
+      var.paths:
+        - /pcap/ssh*.log
+    tunnel:
+      enabled: true
+      var.paths:
+        - /pcap/tunnel*.log
+    x509:
+      enabled: true
+      var.paths:
+        - /pcap/x509*.log
+    connection:
+      enabled: true
+      var.paths:
+        - /pcap/conn*.log    
+    dns:
+      enabled: true
+      var.paths:
+        - /pcap/dns*.log
+    http:
+      enabled: true
+      var.paths:
+        - /pcap/http*.log
+    files:
+      enabled: true
+      var.paths:
+        - /pcap/files*.log
+    ssl:
+      enabled: true
+      var.paths:
+        - /pcap/ssl*.log
+    notice:
+      enabled: true
+      var.paths:
+        - /pcap/notice*.log
+
+  output.elasticsearch:
+    hosts: "{{ zeek_filebeat_shipper.elastic.hosts | default(['http://localhost:9200']) }}"
+    index: "{{ zeek_filebeat_shipper.elastic.index_pattern | default('filebeat') }}-%{+yyyy.MM.dd{%if zeek_filebeat_shipper.elastic.hourly%}.hh{%endif%}}"
+    bulk_max_size: 1000
+
+  logging.level: info
+
+  setup.template:
+    name: "{{ zeek_filebeat_shipper.elastic.index_pattern | default('filebeat') }}"
+    pattern: "{{ zeek_filebeat_shipper.elastic.index_pattern | default('filebeat') }}-*"
+    enabled: true
+
+  setup.ilm.enabled: false

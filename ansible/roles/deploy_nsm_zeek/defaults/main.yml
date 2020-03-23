@@ -1,0 +1,19 @@
+---
+zeek_image: blacktop/zeek
+zeek_filebeat_shipper_image: "docker.elastic.co/beats/filebeat:{{ elastic_version | default('7.6.1') }}"
+
+zeek:
+  name: default-zeek
+  enable: true
+  af_packet: 
+    - eth0
+    - eth1
+
+zeek_filebeat_shipper:
+  enable: "{{ zeek_filebeat_enable | default(true) }}"
+  paths: "/pcap/*log"
+  elastic:
+    hosts:
+      - http://localhost:9200
+    index_pattern: filebeat
+    hourly: "{{ zeek_elastic_index_pattern_hourly | default(false) }}"

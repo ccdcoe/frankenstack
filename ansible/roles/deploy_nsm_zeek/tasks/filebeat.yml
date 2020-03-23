@@ -1,0 +1,21 @@
+---
+- name: Deploy filebeat config
+  template:
+    src: filebeat.j2
+    dest: "{{ host_container_root | mandatory }}/{{ zeek.name }}/filebeat.yml"
+    mode: 0644
+  notify: 
+    - restart zeek filebeat
+
+- name: Run filebeat event shipper for suricata through file output
+  docker_container:
+    name: "{{ zeek.name }}-shipper-filebeat-{{ item }}"
+    image: "{{ zeek_filebeat_shipper_image }}"
+    state: "{{ 'started' if zeek_filebeat_shipper.enable | default(false) else 'stopped' }}"
+    restart_policy: unless-stopped
+    command: run -c /etc/filebeat.yml
+    network_mode: host
+    volumes:
+      - "{{ zeek.name }}-{{ item }}-data:/pcap:ro"
+      - "{{ host_container_root | mandatory }}/{{ zeek.name }}/filebeat.yml:/etc/filebeat.yml:ro"
+  loop: "{{ zeek.af_packet }}"
