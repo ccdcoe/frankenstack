@@ -1,0 +1,12 @@
+---
+- name: pull images
+  docker_image:
+    name: "{{ packetbeat_image }}"
+    source: pull
+    force_source: yes
+  retries: 15
+  delay: 2
+  register: docker_pull
+  until: not docker_pull.failed
+  tags:
+    - pull

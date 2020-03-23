@@ -1,0 +1,2 @@
+---
+packetbeat_image: "docker.elastic.co/beats/packetbeat:{{ elastic_version | default('7.6.1') }}"

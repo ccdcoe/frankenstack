@@ -11,5 +11,6 @@
     - deploy_elastic
     - deploy_nsm_suricata 
     - deploy_nsm_zeek
+    - deploy_nsm_packetbeat
     - deploy_nsm_moloch
     - deploy_evebox
