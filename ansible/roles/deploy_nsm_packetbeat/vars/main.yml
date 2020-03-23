@@ -1,1 +1,59 @@
 ---
+packetbeat_config:
+  packetbeat.interfaces.device: "{{ packetbeat_iface | default('any') }}"
+  packetbeat.interfaces.snaplen: 1514
+  packetbeat.interfaces.type: af_packet
+  packetbeat.interfaces.buffer_size_mb: 100
+
+  packetbeat.flows:
+    timeout: 30s
+    period: 10s
+
+  packetbeat.protocols.dns:
+    ports: [53]
+
+  packetbeat.protocols.http:
+    ports: [80, 5601, 9200, 8080, 8081, 5000, 8002]
+
+  packetbeat.protocols.memcache:
+    ports: [11211]
+
+  packetbeat.protocols.mysql:
+    ports: [3306]
+
+  packetbeat.protocols.pgsql:
+    ports: [5432]
+
+  packetbeat.protocols.redis:
+    ports: [6379]
+
+  packetbeat.protocols.thrift:
+    ports: [9090]
+
+  packetbeat.protocols.mongodb:
+    ports: [27017]
+
+  packetbeat.protocols.cassandra:
+    ports: [9042]
+
+  packetbeat.protocols.tls:
+    ports: [443, 993, 995, 5223, 8443, 8883, 9243]
+
+  processors:
+  - add_cloud_metadata: ~
+  - add_docker_metadata: ~
+
+  output:
+    elasticsearch:
+      hosts: "{{ packetbeat.elastic.hosts }}"
+      index: "{{ packetbeat.elastic.index_pattern | default('packetbeat') }}-%{+yyyy.MM.dd{%if packetbeat.elastic.hourly%}.hh{%endif%}}"
+      bulk_max_size: 1000
+
+  logging.level: info
+
+  setup.template:
+    name: "{{ packetbeat.elastic.index_pattern | default('packetbeat') }}"
+    pattern: "{{ packetbeat.elastic.index_pattern | default('packetbeat') }}-*"
+    enabled: true
+
+  setup.ilm.enabled: false

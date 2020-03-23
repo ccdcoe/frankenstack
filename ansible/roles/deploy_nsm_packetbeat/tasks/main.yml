@@ -10,3 +10,34 @@
   until: not docker_pull.failed
   tags:
     - pull
+
+- name: Create host folders for packetbeat configs
+  file:
+    path: "{{ host_container_root | mandatory }}/{{ packetbeat.name }}"
+    state: directory
+    mode: 0755
+
+- name: Create packetbeat config
+  template:
+    src: packetbeat.j2
+    dest: "{{ host_container_root | mandatory }}/{{ packetbeat.name }}/packetbeat-{{ item }}.yml"
+  notify:
+    - restart packetbeat
+  loop: "{{ packetbeat.interfaces }}"
+  vars:
+    packetbeat_iface: "{{ item }}"
+
+- name: Run container for packetbeat
+  docker_container:
+    name: "{{ packetbeat.name }}-sensor-{{ item }}"
+    image: "{{ packetbeat_image }}"
+    state: "{{ packetbeat.enable | default(true) | ternary('started', 'stopped', 'stopped') }}"
+    network_mode: host
+    restart_policy: unless-stopped
+    capabilities:
+      - net_admin
+      - net_raw
+    volumes:
+      - "{{ host_container_root | mandatory }}/{{ packetbeat.name }}/packetbeat-{{ item }}.yml:/etc/packetbeat.yml:ro"
+    command: "-c /etc/packetbeat.yml"
+  loop: "{{ packetbeat.interfaces | mandatory }}"

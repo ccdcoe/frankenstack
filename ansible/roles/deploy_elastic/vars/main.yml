@@ -4,6 +4,8 @@ elastic_templates:
     index_patterns:
     - filebeat-*
     - winlogbeat-*
+    - auditbeat-*
+    - packetbeat-*
     - events-*
     - suricata-*
     - logstash-*

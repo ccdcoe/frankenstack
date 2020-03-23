@@ -1,0 +1,4 @@
+---
+- name: restart packetbeat
+  command: "docker restart {{ packetbeat.name }}-sensor-{{ item }}"
+  loop: "{{ packetbeat.interfaces | mandatory }}"

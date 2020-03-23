@@ -58,6 +58,7 @@ suricata_af_packet: "{{ suricata_af_packet_interfaces + suricata_af_packet_defau
 moloch_capture_interfaces: "{{ suricata_af_packet_interfaces | map(attribute='interface')| list }}"
 # Uses a list just like moloch, but separate variable to make usage explicit
 zeek_capture_interfaces: "{{ moloch_capture_interfaces }}"
+packetbeat_capture_interfaces: "{{ moloch_capture_interfaces }}"
 
 zeek:
   name: "{{ prefix }}-zeek"
@@ -69,8 +70,18 @@ zeek_filebeat_shipper:
   paths: "/pcap/*log"
   elastic:
     hosts:
-      - http://localhost:9200
+      - "{{ elastic_external_proxy}}"
     index_pattern: filebeat
+    hourly: true
+
+packetbeat:
+  name: "{{ prefix }}-packetbeat"
+  enable: true
+  interfaces: "{{ packetbeat_capture_interfaces }}"
+  elastic:
+    hosts:
+      - "{{ elastic_external_proxy}}"
+    index_pattern: packetbeat
     hourly: true
 
 # Modify with network addresses that you wish to modify

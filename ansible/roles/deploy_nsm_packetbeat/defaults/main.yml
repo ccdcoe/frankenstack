@@ -1,2 +1,14 @@
 ---
 packetbeat_image: "docker.elastic.co/beats/packetbeat:{{ elastic_version | default('7.6.1') }}"
+
+packetbeat:
+  name: default-packetbeat
+  enable: true
+  interfaces: 
+    - eth0
+    - eth1
+  elastic:
+    hosts:
+      - http://localhost:9200
+    index_pattern: filebeat
+    hourly: "{{ packetbeat_elastic_index_pattern_hourly | default(false) }}"
