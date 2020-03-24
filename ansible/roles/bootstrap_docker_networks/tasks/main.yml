@@ -1,3 +1,4 @@
+---
 - name: Deploy docker networks
   run_once: true
   docker_network:

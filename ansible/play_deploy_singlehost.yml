@@ -2,15 +2,5 @@
 - name: Deploy single-host NSM through frankenstack
   hosts: all
 
-  vars_files:
-    - vars/singlehost.yml
-
   roles:
-    - bootstrap_docker_networks
-    - deploy_redis
-    - deploy_elastic
-    - deploy_nsm_suricata 
-    - deploy_nsm_zeek
-    - deploy_nsm_packetbeat
-    - deploy_nsm_moloch
-    - deploy_evebox
+    - meta_nsm_singlehost

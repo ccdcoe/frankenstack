@@ -97,7 +97,7 @@
   docker_container:
     name: "{{ suricata.name }}-peek-shipper"
     image: "{{ suricata_custom_shipper_image }}"
-    state: "{{ 'started' if suricata_peek_shipper.enabled | default(false) else 'stopped' }}"
+    state: "{{ 'started' if suricata_peek_shipper.enable | default(false) else 'stopped' }}"
     restart_policy: unless-stopped
     command: run
     network_mode: host
@@ -122,7 +122,7 @@
     name: "{{ suricata_filebeat_container_name }}"
     hostname: "{{ suricata_filebeat_container_name }}"
     image: "{{ suricata_filebeat_shipper_image }}"
-    state: "{{ 'started' if suricata_filebeat_shipper.enabled | default(false) else 'stopped' }}"
+    state: "{{ 'started' if suricata_filebeat_shipper.enable | default(false) else 'stopped' }}"
     restart_policy: unless-stopped
     command: run -c /etc/filebeat.yml
     network_mode: host

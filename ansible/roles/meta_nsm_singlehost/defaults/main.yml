@@ -1,0 +1,122 @@
+---
+# THIS IS A REFERENCE CONFIG, PLEASE MODIFY FOR YOUR ENVIRONMENT
+#
+# NOTE - singlehost deploy does not create ansible user nor any host directories
+# user and container/pcap root directories should already be present on the system
+# furthermore, the system should have docker-ce installed and ansible_user must be in docker group
+
+# Ansible stuff
+ansible_python_interpreter: /usr/bin/python3
+
+# User to create remote connection as
+# ansible_user: ansible
+# location for storing container config files, etc on host
+host_container_root: "{{ ansible_env.HOME }}/.ansible/docker-containers"
+# Location for storing moloch pcap on host
+host_pcap_dir: /srv/pcap
+
+# Project prefix, will be prepended to all container names
+prefix: frankenstack-reference-capture
+#
+# Following variables can be modified to enable or disable specific components
+# Note that containers will still be deployed, but are in stopped state
+# Disabled containers can always be started manually if needed
+
+# Enable or disable open-source images
+# Disabling will enable beats kibana setup
+elastic_oss_only: false
+
+# Zeek pcap sensors
+enable_zeek_sensors: true
+# Filebeat collectors for zeek logs
+# Formats events to ECS logs via filebeat module
+# Thus, requires non-oss elastic
+enable_zeek_filebeat: "{{ not elastic_oss_only }}"
+# Packetbeat for basic network statistics
+enable_packetbeat_sensors: true
+# Filebeat collectors for suricata logs
+# Formats events to ECS logs via filebeat module
+# Thus, requires non-oss elastic
+enable_suricata_filebeat: "{{ not elastic_oss_only }}"
+# Custom event shipper through suricata unix socket
+# Stores events in original suricata EVE format and is therefore compatible with suricata community tools
+enable_suricata_peek: true
+# Evebox interface
+# Requires peex uxsock shipper, as it does not support ECS
+# No built-in security, so disable if you do not want to expose it
+enable_suricata_evebox: "{{ enable_suricata_peek }}"
+
+# Configure individual components
+# exposed port for elasticsearch
+elastic_ext_port: 9200
+kibana_ext_port: 5601
+# exposed IP for elasticsearch
+# currently limited to single valid address, as used in multiple places (cannot use localhost or 0.0.0.0)
+# can be limited to localhost, but is needed for pushing templates, etc.
+elastic_ext_host: 127.0.0.1
+elastic_heap_size_gb: 2
+
+# Hourly index pattern for elastic indices
+# Enable when resources are limited and only a short interval will be stored
+# Otherwise disable
+elastic_hourly: true
+
+moloch_wise_ext_port: 8081
+moloch_viewer_ext_port: 8005
+
+# Password for moloch admin user
+moloch_admin_pass: SUPERDUPERSECRETPASS
+# Password for moloch regular user
+moloch_operator_pass: SUPERDUPERSECRETPASS2
+
+# Config secret used for encrypting passwords in elasticsearch
+# Will be put into config file and never has to be entered manually, so make it long and complex
+moloch_secret: SUPERDUPERSECRETPLEASECHANGEME
+
+
+# Network interface configured for mirror port
+capture_ifaces: "{{ ansible_interfaces | select('match', '^(ens|eno|eth)') | list }}"
+
+# Modify _interface_ and _cluster-id_ values if you want to use multiple capture ifaces
+suricata_af_packet_interfaces:
+  - interface: "{{ capture_ifaces[0] }}"
+    cluster-id: "{{ 90 + capture_ifaces.index(capture_ifaces[0]) }}"
+    cluster-type: cluster_flow
+  - interface: "{{ capture_ifaces[1] }}"
+    cluster-id: "{{ 90 + capture_ifaces.index(capture_ifaces[1]) }}"
+    cluster-type: cluster_flow
+
+# Sources for suricata rules
+suricata_rule_sources:
+  - https://rules.emergingthreats.net/open/suricata-5.0/emerging.rules.tar.gz
+  - https://raw.githubusercontent.com/OISF/suricata-trafficid/master/rules/traffic-id.rules
+  - https://sslbl.abuse.ch/blacklist/sslblacklist.rules
+  - https://sslbl.abuse.ch/blacklist/sslipblacklist.rules
+  - https://sslbl.abuse.ch/blacklist/ja3_fingerprints.rules
+  - https://github.com/ptresearch/AttackDetection/blob/master/pt.rules.tar.gz
+
+# Disable suricata rules that produce false positives and/or boring alerts
+suricata_rule_disable:
+  - 're: Malicious JA3 SSL-Client Fingerprint detected \(Tofsee\)'
+  - 're: Malicious JA3 SSL-Client Fingerprint detected \(Adware\)'
+  - 're: ET POLICY Spotify P2P Client'
+  - 're: ETPRO POLICY Android Device Connectivity Check'
+
+
+# Define network segments that are considered internal or private
+# Mainly used by suricata for directional alert rules
+home_nets:
+  - 10.0.0.0/8
+  - 192.168.0.0/16
+  - fe80::/10
+
+# Define networks that are considered as assets
+# Used by moloch for reversedns name lookups
+# Can be same as home nets, but not limited to internal segments
+# For example, a DMZ might be considered an external net for alerting but is still relevant to fpc tagging
+# A foreign network can also be added for threat intel tagging
+asset_lookup_nets: "{{ home_nets }}"
+
+# Stop analyzing traffic as soon as encryption is detected
+# For performance optimization
+suricata_bypass_encryption: true

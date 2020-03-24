@@ -1,0 +1,51 @@
+---
+- include_role:
+    name: bootstrap_docker_networks
+  tags:
+    - docker
+    - prep
+
+- include_role:
+    name: deploy_redis
+  tags:
+    - redis
+
+- include_role:
+    name: deploy_elastic
+  tags:
+    - elastic
+
+- include_role:
+    name: deploy_nsm_suricata
+  tags:
+    - suricata
+    - nsm
+
+- include_role:
+    name: deploy_nsm_zeek
+  tags:
+    - zeek
+    - bro
+    - nsm
+
+- include_role:
+    name: deploy_nsm_packetbeat
+  tags:
+    - xpack
+    - nsm
+    - beats
+    - packetbeat
+
+- include_role:
+    name: deploy_nsm_moloch
+  tags:
+    - nsm
+    - moloch
+    - fpc
+
+- include_role:
+    name: deploy_evebox
+  tags:
+    - nsm
+    - frontend
+    - evebox

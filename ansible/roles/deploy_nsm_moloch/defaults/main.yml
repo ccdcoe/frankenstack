@@ -1,6 +1,4 @@
 ---
-host_container_root: /srv/docker-containers
-
 moloch_image:
   capture: markuskont/moloch-capture
   viewer: markuskont/moloch-viewer

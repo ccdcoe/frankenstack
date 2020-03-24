@@ -29,7 +29,7 @@ suricata_rule_dir: /var/lib/suricata/rules
 
 suricata_filebeat_shipper:
   deploy: true
-  enabled: false
+  enable: false
   paths:
     - "/var/log/suricata/*.json"
   elastic:
@@ -39,7 +39,7 @@ suricata_filebeat_shipper:
 
 suricata_peek_shipper:
   deploy: true
-  enabled: false
+  enable: false
   socket_name: suricata-events.socket
   kafka:
     enabled: false

@@ -1,0 +1,260 @@
+---
+# Connection strings for elasticsearch
+# For host and docker networks
+elastic_external_proxy: "http://{{ elastic_ext_host | mandatory }}:{{ elastic_ext_port | mandatory }}"
+elastic_internal_proxy: "http://{{ prefix | mandatory }}-elastic-0-node:9200"
+
+elastic_oss: "{{ elastic_oss_only }}"
+
+# default settings for all suricata af-packet interfaces
+# you can modify the first element but do not add new items
+suricata_af_packet_default:
+  - interface: default
+    defrag: yes
+
+# Merge per interface config with default section
+# Split to avoid breaking moloch interface config in next section
+suricata_af_packet: "{{ suricata_af_packet_interfaces | mandatory + suricata_af_packet_default }}"
+
+# to be used together with suricata_af_packet, as moloch only needs a semicolon-separated list of capture interfaces, while meerkat also needs a unique cluster-id for each value
+moloch_capture_interfaces: "{{ suricata_af_packet_interfaces | map(attribute='interface')| list }}"
+# Uses a list just like moloch, but separate variable to make usage explicit
+zeek_capture_interfaces: "{{ moloch_capture_interfaces }}"
+packetbeat_capture_interfaces: "{{ moloch_capture_interfaces }}"
+
+zeek:
+  name: "{{ prefix }}-zeek"
+  enable: "{{ enable_zeek_sensors | default(true) }}"
+  interfaces: "{{ zeek_capture_interfaces }}"
+
+zeek_filebeat_shipper:
+  enable: "{{ enable_zeek_filebeat | default(true) }}"
+  paths: "/pcap/*log"
+  elastic:
+    hosts:
+      - "{{ elastic_external_proxy }}"
+    index_pattern: filebeat
+    hourly: "{{ elastic_hourly | default(false) }}"
+
+packetbeat:
+  name: "{{ prefix }}-packetbeat"
+  enable: "{{ enable_packetbeat_sensors | default(true) }}"
+  interfaces: "{{ packetbeat_capture_interfaces }}"
+  elastic:
+    hosts:
+      - "{{ elastic_external_proxy }}"
+    index_pattern: packetbeat
+    hourly: "{{ elastic_hourly | default(false) }}"
+
+# Modify with network addresses that you wish to modify
+# Affects both suricata and moloch (reverse dns asset decoration)
+suricata_home_nets: "{{ home_nets | default(['192.168.0.0/16', 'fe80::/10']) }}"
+
+# one bridge to rule them all
+docker_networks:
+  - name: "{{ prefix }}-network"
+    driver: bridge
+
+redis_servers:
+  - name: "{{ prefix }}-redis"
+    singlehost: true
+    expose:
+      - 6379:6379
+    network: "{{ prefix }}-network"
+
+elastic_template_settings:
+  number_of_replicas: 0
+  number_of_shards: 1
+  refresh_interval: 30s
+
+elastic_clusters:
+  - name: "{{ prefix }}-elastic"
+    networks:
+      - name: "{{ prefix }}-network"
+    singlehost: true
+    proxy: "{{ elastic_external_proxy }}"
+    manage_template: true
+    host_network: false
+    memory_gb: 
+      node: "{{ elastic_heap_size_gb | mandatory }}"
+    expose_elastic:
+      - "{{ elastic_ext_host | mandatory }}:{{ elastic_ext_port | mandatory }}:9200"
+    expose_kibana:
+      - "{{ kibana_ext_port }}:5601"
+    kibana_elasticsearch_hosts:
+      - "{{ elastic_internal_proxy }}"
+
+suricata_filebeat_shipper:
+  deploy: true
+  enable: "{{ enable_suricata_filebeat | default(true) }}"
+  paths:
+    - "/var/log/suricata/*.json"
+  elastic:
+    hourly: "{{ elastic_hourly | default(false) }}"
+    index_pattern: filebeat
+    hosts:
+      - "{{ elastic_external_proxy }}"
+
+suricata_peek_shipper:
+  deploy: true
+  enable: "{{ enable_suricata_peek | default(true) }}"
+  socket_name: "{{ suricata_socket_file }}"
+  elastic:
+    enabled: true
+    hourly: "{{ elastic_hourly | default(false) }}"
+    index: events-suricata
+    hosts:
+      - "{{ elastic_external_proxy }}"
+
+suricata_socket_file: suricata-events.socket
+
+suricata:
+  name: "{{prefix}}-suricata"
+  sensor_name: "{{prefix}}-suricata"
+  rule:
+    sources: "{{ suricata_rule_sources }}"
+    disable: "{{ suricata_rule_disable }}"
+
+suricata_base_eve_only_alert:
+  - alert:
+      payload: yes
+      payload-buffer-size: 4kb
+      payload-printable: yes
+      packet: no
+      metadata: yes
+      http-body: yes
+      http-body-printable: yes
+      tagged-packets: yes
+
+suricata_base_eve_events:
+  - anomaly:
+      enabled: yes
+      types:
+  - http:
+      extended: yes
+  - dns:
+  - tls:
+      extended: yes
+  - files:
+      force-magic: no
+  - smtp:
+  - dnp3
+  - ftp
+  - rdp
+  - nfs
+  - smb
+  - tftp
+  - ikev2
+  - krb5
+  - snmp
+  - sip
+  - dhcp:
+      enabled: yes
+      extended: no
+  - ssh
+  - flow
+
+surcata_base_eve_stats:
+  - stats
+
+suricata_base_eve_protos_and_alerts: "{{ suricata_base_eve_only_alert + suricata_base_eve_events }}"
+
+suricata_eve_log:
+  - eve-log:
+      enabled: yes
+      filetype: unix_stream
+      filename: "/var/lib/peek/{{ suricata_socket_file }}"
+      pcap-file: false
+      community-id: true
+      community-id-seed: 0
+      xff:
+        enabled: yes
+        mode: extra-data
+        deployment: reverse
+        header: X-Forwarded-For
+      types: "{{ suricata_base_eve_protos_and_alerts }}"
+  - eve-log:
+      enabled: yes
+      filetype: regular
+      filename: alert.json
+      pcap-file: false
+      community-id: true
+      community-id-seed: 0
+      xff:
+        enabled: yes
+        mode: extra-data
+        deployment: reverse
+        header: X-Forwarded-For
+      types: "{{ suricata_base_eve_only_alert }}"
+  - eve-log:
+      enabled: yes
+      filetype: regular
+      filename: eve.json
+      pcap-file: false
+      community-id: true
+      community-id-seed: 0
+      xff:
+        enabled: yes
+        mode: extra-data
+        deployment: reverse
+        header: X-Forwarded-For
+      types: "{{ suricata_base_eve_events + surcata_base_eve_stats }}"
+
+moloch_wise_config:
+  reversedns:
+    range: "{{ asset_lookup_nets | default(suricata_home_nets) | join(';') }}"
+    field: asset
+
+moloch_prefix: "{{ prefix }}-owl"
+moloch:
+  name: "{{ moloch_prefix }}"
+  capture:
+    elasticsearch: 
+    - "{{ elastic_external_proxy }}"
+    wise:
+      port: "{{ moloch_wise_ext_port }}"
+      host: "127.0.0.1"
+  viewer:
+    elasticsearch: 
+    - "{{ elastic_internal_proxy }}"
+    network: "{{ prefix }}-network"
+    wise:
+      port: 8081
+      host: "{{ moloch_prefix }}-wise"
+    expose:
+      - "{{ moloch_viewer_ext_port }}:8005"
+  wise:
+    published_port: "{{ moloch_wise_ext_port }}"
+    config: "{{ moloch_wise_config }}"
+  interfaces: "{{ moloch_capture_interfaces }}"
+  secret: "{{ moloch_secret }}"
+  host_pcap_dir: "{{ host_pcap_dir }}"
+  create_host_pcap_dir: true
+  container_uid: 1000
+  db:
+    shards: 1
+    replicas: 0
+    shards_per_node: 3
+  suricata:
+    container_dir: /var/log/suricata
+    file: alert.json
+
+moloch_users:
+  - username: admin
+    password: "{{ moloch_admin_pass | mandatory }}"
+    admin: yes
+    pretty: Administrator
+  - username: operator
+    password: "{{ moloch_operator_pass | mandatory }}"
+    admin: no
+    pretty: Vagrant
+
+evebox:
+  name: "{{ prefix }}-evebox"
+  enable: "{{ enable_suricata_evebox | default(true) }}"
+  elastic: "{{ elastic_internal_proxy }}"
+  network: "{{ docker_networks[0].name }}"
+  index: "{{ suricata_peek_shipper.elastic.index }}"
+  keyword: keyword
+  expose:
+    - 5636:5636
