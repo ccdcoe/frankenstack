@@ -10,14 +10,19 @@ Vagrant.configure(2) do |config|
   config.vm.define NAME do |box|
     box.vm.box = "debian/buster64"
     box.vm.hostname = NAME
-    box.vm.network :private_network, ip: "192.168.34.10"
     box.vm.synced_folder ".", "/vagrant", 
       type: "nfs", 
       nfs_udp: false, 
       nfs_version: 4
-    box.vm.provider :virtualbox do |vb|
+    box.vm.provider :virtualbox do |vb, override|
+      override.vm.network :private_network, ip: "192.168.34.10"
       vb.customize ["modifyvm", :id, "--memory", MEM]
       vb.customize ["modifyvm", :id, "--cpus", CPU]
+    end
+    box.vm.provider :libvirt do |v, override|
+      override.vm.network :private_network, ip: "192.168.35.10"
+      v.memory = MEM
+      v.cpus = CPU
     end
     config.vm.provision :ansible_local do |ansible|
       ansible.install = true

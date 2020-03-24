@@ -33,15 +33,15 @@ elastic_heap_size_gb: 2
 elastic_oss: false
 
 # Network interface configured for mirror port
-# capture_iface: ens801f1
+capture_ifaces: "{{ ansible_interfaces | select('match', '^(ens|eno|eth)') | list }}"
 
 # Modify _interface_ and _cluster-id_ values if you want to use multiple capture ifaces
 suricata_af_packet_interfaces:
-  - interface: eth0
-    cluster-id: 99
+  - interface: "{{ capture_ifaces[0] }}"
+    cluster-id: "{{ 90 + capture_ifaces.index(capture_ifaces[0]) }}"
     cluster-type: cluster_flow
-  - interface: eth1
-    cluster-id: 98
+  - interface: "{{ capture_ifaces[1] }}"
+    cluster-id: "{{ 90 + capture_ifaces.index(capture_ifaces[1]) }}"
     cluster-type: cluster_flow
 
 # default settings for all suricata af-packet interfaces
