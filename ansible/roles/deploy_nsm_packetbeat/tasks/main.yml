@@ -20,16 +20,18 @@
 - name: Create packetbeat config
   template:
     src: packetbeat.j2
-    dest: "{{ host_container_root | mandatory }}/{{ packetbeat.name }}/packetbeat-{{ item }}.yml"
+    dest: "{{ host_container_root | mandatory }}/{{ packetbeat.name }}/packetbeat-{{ id }}.yml"
   notify:
     - restart packetbeat
-  loop: "{{ packetbeat.interfaces }}"
+  loop: "{{ packetbeat.interfaces | mandatory }}"
   vars:
     packetbeat_iface: "{{ item }}"
+    id: "{{ packetbeat.interfaces.index(item) }}"
 
 - name: Run container for packetbeat
   docker_container:
-    name: "{{ packetbeat.name }}-sensor-{{ item }}"
+    name: "{{ packetbeat.name }}-sensor-{{ id }}"
+    hostname: "{{ packetbeat.name }}-sensor-{{ id }}"
     image: "{{ packetbeat_image }}"
     state: "{{ packetbeat.enable | default(true) | ternary('started', 'stopped', 'stopped') }}"
     network_mode: host
@@ -38,6 +40,8 @@
       - net_admin
       - net_raw
     volumes:
-      - "{{ host_container_root | mandatory }}/{{ packetbeat.name }}/packetbeat-{{ item }}.yml:/etc/packetbeat.yml:ro"
+      - "{{ host_container_root | mandatory }}/{{ packetbeat.name }}/packetbeat-{{ id }}.yml:/etc/packetbeat.yml:ro"
     command: "-c /etc/packetbeat.yml"
   loop: "{{ packetbeat.interfaces | mandatory }}"
+  vars:
+    id: "{{ packetbeat.interfaces.index(item) }}"

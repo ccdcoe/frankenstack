@@ -14,7 +14,8 @@
 
 - name: Run container for zeek
   docker_container:
-    name: "{{ zeek.name }}-sensor-{{ item }}"
+    name: "{{ zeek.name }}-sensor-{{ id }}"
+    hostname: "{{ zeek.name }}-sensor-{{ id }}"
     image: "{{ zeek_image }}"
     state: "{{ zeek.enable | default(true) | ternary('started', 'stopped', 'stopped') }}"
     network_mode: host
@@ -22,7 +23,9 @@
     capabilities:
       - net_admin
     volumes:
-      - "{{ zeek.name }}-{{ item }}-data:/pcap:rw"
+      - "{{ zeek.name }}-{{ id }}-data:/pcap:rw"
       - "{{ host_container_root | mandatory }}/{{ zeek.name }}/local.zeek:/usr/local/zeek/share/zeek/site/local.zeek:ro"
     command: "-C -i {{ item }} local"
   loop: "{{ zeek.interfaces | mandatory }}"
+  vars:
+    id: "{{ zeek.interfaces.index(item) }}"

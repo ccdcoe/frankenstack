@@ -9,13 +9,16 @@
 
 - name: Run filebeat event shipper for suricata through file output
   docker_container:
-    name: "{{ zeek.name }}-shipper-filebeat-{{ item }}"
+    name: "{{ zeek.name }}-shipper-filebeat-{{ id }}"
+    hostname: "{{ zeek.name }}-shipper-filebeat-{{ id }}"
     image: "{{ zeek_filebeat_shipper_image }}"
     state: "{{ 'started' if zeek_filebeat_shipper.enable | default(false) else 'stopped' }}"
     restart_policy: unless-stopped
     command: run -c /etc/filebeat.yml
     network_mode: host
     volumes:
-      - "{{ zeek.name }}-{{ item }}-data:/pcap:ro"
+      - "{{ zeek.name }}-{{ id }}-data:/pcap:ro"
       - "{{ host_container_root | mandatory }}/{{ zeek.name }}/filebeat.yml:/etc/filebeat.yml:ro"
   loop: "{{ zeek.interfaces }}"
+  vars:
+    id: "{{ zeek.interfaces.index(item) }}"

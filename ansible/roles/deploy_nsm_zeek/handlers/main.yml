@@ -1,8 +1,12 @@
 ---
 - name: restart zeek
-  command: "docker restart {{ zeek.name }}-sensor-{{ item }}"
+  command: "docker restart {{ zeek.name }}-sensor-{{ id }}"
   loop: "{{ zeek.interfaces | mandatory }}"
+  vars:
+    id: "{{ zeek.interfaces.index(item) }}"
 
 - name: restart zeek filebeat
-  command: "docker restart {{ zeek.name }}-shipper-filebeat-{{ item }}"
+  command: "docker restart {{ zeek.name }}-shipper-filebeat-{{ id }}"
   loop: "{{ zeek.interfaces | mandatory }}"
+  vars:
+    id: "{{ zeek.interfaces.index(item) }}"

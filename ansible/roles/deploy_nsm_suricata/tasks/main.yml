@@ -90,7 +90,7 @@
 
 - set_fact:
     suricata_extended_volumes: "{{ suricata_volumes + suricata_socket_volumes + suricata_log_volumes }}"
-    suricata_container_name: "{{ suricata.name }}"
+    suricata_container_name: "{{ suricata.name }}-sensor"
     suricata_filebeat_container_name: "{{ suricata.name }}-filebeat-shipper"
 
 - name: Run custom event shipper for suricata through unix socket output
@@ -120,6 +120,7 @@
 - name: Run filebeat event shipper for suricata through file output
   docker_container:
     name: "{{ suricata_filebeat_container_name }}"
+    hostname: "{{ suricata_filebeat_container_name }}"
     image: "{{ suricata_filebeat_shipper_image }}"
     state: "{{ 'started' if suricata_filebeat_shipper.enabled | default(false) else 'stopped' }}"
     restart_policy: unless-stopped
@@ -130,7 +131,8 @@
 
 - name: Run container for suricata
   docker_container:
-    name: "{{ suricata.name }}"
+    name: "{{ suricata_container_name }}"
+    hostname: "{{ suricata_container_name }}"
     image: "{{ suricata_image }}"
     state: started
     network_mode: host

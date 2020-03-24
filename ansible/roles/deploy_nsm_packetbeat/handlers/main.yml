@@ -1,4 +1,6 @@
 ---
 - name: restart packetbeat
-  command: "docker restart {{ packetbeat.name }}-sensor-{{ item }}"
+  command: "docker restart {{ packetbeat.name }}-sensor-{{ id }}"
   loop: "{{ packetbeat.interfaces | mandatory }}"
+  vars:
+    id: "{{ packetbeat.interfaces.index(item) }}"
