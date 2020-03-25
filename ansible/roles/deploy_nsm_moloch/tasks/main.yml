@@ -36,7 +36,7 @@
 - name: Deploy moloch rules file on host
   template:
     src: moloch-rules.j2
-    dest: "{{ host_container_root }}/{{ moloch.name }}/config/moloch-rules.yml"
+    dest: "{{ host_container_root }}/{{ moloch.name }}/moloch-rules.yml"
     mode: 0644
   notify:
     - restart moloch capture
@@ -44,7 +44,7 @@
 - name: Deploy moloch config for capture on host
   template:
     src: moloch-config.j2
-    dest: "{{ host_container_root }}/{{ moloch.name }}/config/moloch-capture.ini"
+    dest: "{{ host_container_root }}/{{ moloch.name }}/moloch-capture.ini"
     mode: 0644
   vars:
     elasticsearch: "{{ moloch.capture.elasticsearch }}"
@@ -55,7 +55,7 @@
 - name: Deploy moloch config for viewer in container
   template:
     src: moloch-config.j2
-    dest: "{{ host_container_root }}/{{ moloch.name }}/config/moloch-viewer.ini"
+    dest: "{{ host_container_root }}/{{ moloch.name }}/moloch-viewer.ini"
     mode: 0644
   vars:
     elasticsearch: "{{ moloch.viewer.elasticsearch }}"
@@ -66,7 +66,7 @@
 - name: Deploy wise config
   template:
     src: wise.j2
-    dest: "{{ host_container_root }}/{{ moloch.name }}/config/wise.ini"
+    dest: "{{ host_container_root }}/{{ moloch.name }}/wise.ini"
     mode: 0644
   vars:
     wiseconfig: "{{ moloch.wise.config | default({}) }}"
@@ -75,8 +75,8 @@
 
 - set_fact:
     capture_mounts:
-      - "{{ host_container_root }}/{{moloch.name}}/config/moloch-rules.yml:/data/moloch/etc/rules.yml:ro"
-      - "{{ host_container_root }}/{{ moloch.name }}/config/moloch-capture.ini:/data/moloch/etc/config.ini:ro"
+      - "{{ host_container_root }}/{{moloch.name}}/moloch-rules.yml:/data/moloch/etc/rules.yml:ro"
+      - "{{ host_container_root }}/{{ moloch.name }}/moloch-capture.ini:/data/moloch/etc/config.ini:ro"
       - "{{ moloch.host_pcap_dir }}:{{ moloch_internal_data_dir }}:rw"
 
 - name: Run container for moloch capture
@@ -109,7 +109,7 @@
     networks:
       - name: "{{ moloch.viewer.network }}"
     volumes:
-      - "{{ host_container_root }}/{{ moloch.name }}/config/moloch-viewer.ini:/data/moloch/etc/config.ini:ro"
+      - "{{ host_container_root }}/{{ moloch.name }}/moloch-viewer.ini:/data/moloch/etc/config.ini:ro"
       - "{{ moloch.host_pcap_dir }}:{{ moloch_internal_data_dir }}:rw"
     env:
       # Needed for initializing absent db via entrypoint
@@ -130,7 +130,7 @@
     published_ports:
       - "{{ moloch.wise.published_port }}:8081"
     volumes:
-      - "{{ host_container_root }}/{{ moloch.name }}/config/wise.ini:/data/moloch/etc/wise.ini:ro"
+      - "{{ host_container_root }}/{{ moloch.name }}/wise.ini:/data/moloch/etc/wise.ini:ro"
 
 - name: Ensure moloch users
   docker_container:
@@ -142,7 +142,7 @@
     networks:
       - name: "{{ moloch.viewer.network }}"
     volumes:
-      - "{{ host_container_root }}/{{ moloch.name }}/config/moloch-viewer.ini:/data/moloch/etc/config.ini:ro"
+      - "{{ host_container_root }}/{{ moloch.name }}/moloch-viewer.ini:/data/moloch/etc/config.ini:ro"
       - "{{ moloch.host_pcap_dir }}:{{ moloch_internal_data_dir }}:rw"
     entrypoint:
       - node
