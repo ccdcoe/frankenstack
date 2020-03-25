@@ -4,11 +4,10 @@
 
 - name: Create host folders for moloch configs and rules
   file:
-    path: "{{ host_container_root }}/{{ item }}"
+    path: "{{ host_container_root | mandatory }}/{{ item }}"
     state: directory
     mode: 0750
   loop:
-    - "{{ moloch.name }}"
     - "{{ moloch.name }}/config"
 
 - name: pull custom images

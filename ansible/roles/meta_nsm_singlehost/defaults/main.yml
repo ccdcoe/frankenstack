@@ -11,7 +11,7 @@ ansible_python_interpreter: /usr/bin/python3
 # User to create remote connection as
 # ansible_user: ansible
 # location for storing container config files, etc on host
-host_container_root: "{{ ansible_env.HOME }}/.ansible/docker-containers"
+override_host_container_root: "{{ ansible_env.HOME }}/.ansible/docker-containers"
 # Location for storing moloch pcap on host
 host_pcap_dir: /srv/pcap
 

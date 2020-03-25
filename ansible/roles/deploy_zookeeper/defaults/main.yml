@@ -1,4 +1,4 @@
-host_container_root: /srv/docker-containers
+---
 zookeeper_image: zookeeper
 
 zookeeper_clusters:

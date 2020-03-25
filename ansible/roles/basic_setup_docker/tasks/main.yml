@@ -34,18 +34,19 @@
 
 - name: Create dedicated dir for per-container bind-mounts
   file:
-    path: "{{host_container_root}}"
+    path: "{{ host_container_root }}"
     state: directory
     mode: 0700
+  when: host_container_root is defined
 
 - stat:
-    path: "{{data.mountpoint}}/docker"
+    path: "{{ data.mountpoint }}/docker"
   register: result
   when: data is defined
 
 - name: Create custom data directory if we have mounted a dedicated drive
   file:
-    path: "{{data.mountpoint}}/docker"
+    path: "{{ data.mountpoint }}/docker"
     state: directory
     mode: 0700
   when: data is defined and result.stat.exists == false

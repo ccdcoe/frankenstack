@@ -1,5 +1,4 @@
 ---
-host_container_root: /srv/docker-containers
 suricata_image: jasonish/suricata
 suricata_update_image: jasonish/suricata
 suricata_custom_shipper_image: markuskont/peek

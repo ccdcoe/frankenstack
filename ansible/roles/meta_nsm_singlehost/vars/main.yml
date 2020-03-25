@@ -1,4 +1,5 @@
 ---
+host_container_root: "{{ override_host_container_root }}"
 # Connection strings for elasticsearch
 # For host and docker networks
 elastic_external_proxy: "http://{{ elastic_ext_host | mandatory }}:{{ elastic_ext_port | mandatory }}"

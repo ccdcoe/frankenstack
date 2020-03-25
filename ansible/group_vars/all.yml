@@ -18,9 +18,6 @@ lv:
   lv_name: services
   mount: /srv/pool-0
 
-default_mount: /srv
-host_container_root: "{{ lv.mount if lv.node in ansible_devices else default_mount }}/docker-containers"
-
 datacenter: clab
 elastic_heap_gb: 8
 

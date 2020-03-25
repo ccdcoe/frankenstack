@@ -1,4 +1,4 @@
-host_container_root: /srv/docker-containers
+---
 rsyslog_image: markuskont/rsyslog
 
 logserver:

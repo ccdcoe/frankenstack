@@ -40,7 +40,7 @@
 - name: Create volumes for suricata
   docker_volume:
     name: "{{ item }}"
-  loop: "{{ suricata_volumes | dict2items(key_name='type', value_name='name') | map(attribute='name' ) | list }}"
+  loop: "{{ suricata_volumes | dict2items(key_name='type', value_name='name') | map(attribute='name') | list }}"
 
 - name: Deploy suricata-update configs
   template:
