@@ -23,10 +23,6 @@ suricata_home_nets:
   - 192.168.0.0/16
   - fe80::/10
 
-suricata_log_dir: /var/log/suricata
-suricata_socket_dir: /var/run/suricata
-suricata_rule_dir: /var/lib/suricata/rules
-
 suricata_filebeat_shipper:
   deploy: true
   enable: false

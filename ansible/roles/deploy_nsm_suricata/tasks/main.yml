@@ -1,12 +1,9 @@
 ---
 - name: Create host folders for suricata configs and rules
   file:
-    path: "{{ host_container_root }}/{{ item }}"
+    path: "{{ host_container_root | mandatory }}/{{ suricata.name }}"
     state: directory
     mode: 0750
-  loop:
-    - "{{ suricata.name }}"
-    - "{{ suricata.name }}/config"
 
 - name: pull custom images
   docker_image:
@@ -24,25 +21,31 @@
     - "{{ suricata_update_image }}"
 
 - set_fact:
-    meerkat: 
-      data_vol: "data-{{ suricata.name }}"
-      rule_vol: "rules-{{ suricata.name }}"
-      socket_vol: "sockets-{{ suricata.name }}"
-      data_socket_vol: "event-sockets-{{suricata.name}}"
+    suricata_container_name: "{{ suricata.name }}-sensor"
+    suricata_filebeat_container_name: "{{ suricata.name }}-filebeat-shipper"
+    suricata_volumes:
+      logs: "{{ suricata.name }}-data"
+      rules: "{{ suricata.name }}-rules"
+      sockets: "{{ suricata.name }}-sockets"
+      log_sockets: "{{suricata.name}}-data-sockets"
+    suricata_mounts:
+      logs: /var/log/suricata
+      rules: /var/lib/suricata
+      sockets: /var/run/suricata
+      log_sockets: /var/lib/peek
+
+- set_fact:
+    suricata_moloch_shared_vol: "{{ suricata_volumes.logs }}"
 
 - name: Create volumes for suricata
   docker_volume:
     name: "{{ item }}"
-  loop:
-    - "data-{{ suricata.name }}"
-    - "rules-{{ suricata.name }}"
-    - "sockets-{{ suricata.name }}"
-    - "event-sockets-{{ suricata.name }}"
+  loop: "{{ suricata_volumes | dict2items(key_name='type', value_name='name') | map(attribute='name' ) | list }}"
 
 - name: Deploy suricata-update configs
   template:
     src: "{{ item.src }}"
-    dest: "{{ host_container_root }}/{{ suricata.name }}/config/{{ item.dest }}"
+    dest: "{{ host_container_root }}/{{ suricata.name }}/{{ item.dest }}"
     mode: 0644
   loop:
     - src: update.j2
@@ -53,45 +56,22 @@
 
 - name: Deploy suricata-update configs
   template:
-    src: "{{ item.src }}"
-    dest: "{{ host_container_root }}/{{ suricata.name }}/config/{{ item.dest }}"
+    src: suricata.j2
+    dest: "{{ host_container_root }}/{{ suricata.name }}/suricata.yaml"
     mode: 0644
-  loop:
-    - src: suricata.j2
-      dest: suricata.yaml
   notify: 
     - restart suricata
   register: suricata_config_updated
 
 - name: Deploy filebeat config
   template:
-    src: "{{ item.src }}"
-    dest: "{{ host_container_root }}/{{ suricata.name }}/config/{{ item.dest }}"
+    src: filebeat.j2
+    dest: "{{ host_container_root }}/{{ suricata.name }}/filebeat.yml"
     mode: 0644
-  loop:
-    - src: filebeat.j2
-      dest: filebeat.yml
   notify: 
     - restart suricata filebeat
   register: suricata_filebeat_config_updated
-  when: suricata_filebeat_shipper is defined and suricata_filebeat_shipper.deploy
-
-- set_fact:
-    suricata_volumes: 
-      - "{{ host_container_root }}/{{ suricata.name }}/config/suricata.yaml:/etc/suricata/suricata.yaml:ro"
-      - "rules-{{ suricata.name }}:/var/lib/suricata:ro"
-      - "sockets-{{ suricata.name }}:{{ suricata_socket_dir }}:rw"
-    suricata_log_volumes:
-      - "data-{{ suricata.name }}:{{ suricata_log_dir }}:rw"
-    suricata_socket_volumes:
-      - "event-sockets-{{ suricata.name }}:/var/lib/peek:rw"
-    suricata_filebeat_config_volume: 
-      - "{{ host_container_root }}/{{ suricata.name }}/config/filebeat.yml:/etc/filebeat.yml:ro"
-
-- set_fact:
-    suricata_extended_volumes: "{{ suricata_volumes + suricata_socket_volumes + suricata_log_volumes }}"
-    suricata_container_name: "{{ suricata.name }}-sensor"
-    suricata_filebeat_container_name: "{{ suricata.name }}-filebeat-shipper"
+  when: suricata_filebeat_shipper is defined and suricata_filebeat_shipper.deploy | default(true)
 
 - name: Run custom event shipper for suricata through unix socket output
   docker_container:
@@ -104,7 +84,7 @@
     env:
       PEEK_INPUT_UXSOCK_ENABLED: 'true'
       PEEK_INPUT_UXSOCK_OVERWRITE: 'true'
-      PEEK_STREAM_SURICATA_UXSOCK: "/var/lib/peek/{{ suricata_peek_shipper.socket_name | default('suricata-events.socket') }}"
+      PEEK_STREAM_SURICATA_UXSOCK: "{{ suricata_mounts.log_sockets }}/{{ suricata_peek_shipper.socket_name | default('suricata-events.socket') }}"
       PEEK_PROCESSOR_COMPAT_LOGSTASH: 'true'
       PEEK_OUTPUT_KAFKA_ENABLED: "{{ 'true' if suricata_peek_shipper.kafka.enabled | default(false) else 'false' }}"
       PEEK_OUTPUT_KAFKA_HOST: "{{ suricata_peek_shipper.kafka.brokers | default(['localhost:9092']) | join(' ') }}"
@@ -114,8 +94,9 @@
       PEEK_OUTPUT_ELASTIC_PREFIX: "{{ suricata_peek_shipper.elastic.index | default('events-suricata') }}"
       PEEK_OUTPUT_ELASTIC_MERGE: 'true'
       PEEK_OUTPUT_ELASTIC_HOURLY: "{{ 'true' if suricata_peek_shipper.elastic.hourly | default(false) else 'false' }}"
-    volumes: "{{ suricata_socket_volumes }}"
-  when: suricata_peek_shipper is defined and suricata_peek_shipper.deploy
+    volumes: 
+      - "{{ suricata_volumes.log_sockets }}:{{ suricata_mounts.log_sockets }}:rw"
+  when: suricata_peek_shipper is defined and suricata_peek_shipper.deploy | default(true)
 
 - name: Run filebeat event shipper for suricata through file output
   docker_container:
@@ -126,8 +107,10 @@
     restart_policy: unless-stopped
     command: run -c /etc/filebeat.yml
     network_mode: host
-    volumes: "{{ suricata_log_volumes + suricata_filebeat_config_volume }}"
-  when: suricata_filebeat_shipper is defined and suricata_filebeat_shipper.deploy
+    volumes:
+      - "{{ host_container_root }}/{{ suricata.name }}/filebeat.yml:/etc/filebeat.yml"
+      - "{{ suricata_volumes.logs }}:{{ suricata_mounts.logs }}:ro"
+  when: suricata_filebeat_shipper is defined and suricata_filebeat_shipper.deploy | default(true)
 
 - name: Run container for suricata
   docker_container:
@@ -140,7 +123,12 @@
     capabilities:
       - net_admin
       - sys_nice
-    volumes: "{{ suricata_extended_volumes }}"
+    volumes:
+      - "{{ host_container_root }}/{{ suricata.name }}/suricata.yaml:/etc/suricata/suricata.yaml:ro"
+      - "{{ suricata_volumes.logs }}:{{ suricata_mounts.logs }}:rw"
+      - "{{ suricata_volumes.rules }}:{{ suricata_mounts.rules }}:ro"
+      - "{{ suricata_volumes.sockets }}:{{ suricata_mounts.sockets }}:rw"
+      - "{{ suricata_volumes.log_sockets }}:{{ suricata_mounts.log_sockets }}:rw"
     command: "--af-packet -vvv"
     env:
       PUID: "61000"
@@ -152,9 +140,9 @@
     name: "{{ suricata.name }}-update"
     image: "{{ suricata_update_image }}"
     volumes:
-      - "{{ host_container_root }}/{{ suricata.name }}/config/update.yaml:/etc/update.yaml:ro"
-      - "{{ host_container_root }}/{{ suricata.name }}/config/disable.conf:/etc/disable.conf:ro"
-      - "rules-{{ suricata.name }}:/var/lib/suricata:rw"
+      - "{{ host_container_root }}/{{ suricata.name }}/update.yaml:/etc/update.yaml:ro"
+      - "{{ host_container_root }}/{{ suricata.name }}/disable.conf:/etc/disable.conf:ro"
+      - "{{ suricata_volumes.rules }}:{{ suricata_mounts.rules }}:rw"
     command: "suricata-update -c /etc/update.yaml"
     detach: no
     auto_remove: no
@@ -176,8 +164,8 @@
       - suricatasc
       -  "-c reload-rules"
     volumes:
-      - "{{ host_container_root }}/{{ suricata.name }}/config/suricata.yaml:/etc/suricata/suricata.yaml:ro"
-      - "sockets-{{ suricata.name }}:{{ suricata_socket_dir }}:rw"
+      - "{{ host_container_root }}/{{ suricata.name }}/suricata.yaml:/etc/suricata/suricata.yaml:ro"
+      - "{{ suricata_volumes.sockets }}:{{ suricata_mounts.sockets }}:rw"
   when: not suricata_config_updated.changed and not docker_pull.changed and not suricata_container_update.changed
   tags:
     - suricata-rule-update

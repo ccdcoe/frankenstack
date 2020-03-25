@@ -27,7 +27,7 @@ suricata_config:
       FILE_DATA_PORTS: "[$HTTP_PORTS,110,143]"
       FTP_PORTS: 21
       VXLAN_PORTS: 4789
-  default-log-dir: "{{ suricata_log_dir }}"
+  default-log-dir: /var/log/suricata
   stats:
     enabled: yes
     interval: 8
@@ -164,7 +164,7 @@ suricata_config:
   default-packet-size: 1514
   unix-command:
     enabled: auto
-    filename: "{{ suricata_socket_dir }}/suricata-command.socket"
+    filename: /var/run/suricata/suricata-command.socket
   legacy:
     uricontent: enabled
   engine-analysis:
@@ -352,7 +352,7 @@ suricata_config:
     ports: [all]
     hashmode: hash5tuplesorted
 
-  default-rule-path: "{{ suricata_rule_dir }}"
+  default-rule-path: /var/lib/suricata/rules
   rule-files: "{{ suricata_rules }}"
 
   classification-file: /etc/suricata/classification.config

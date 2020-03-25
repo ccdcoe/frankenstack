@@ -90,7 +90,7 @@
     privileged: yes 
     ulimits:
       - nofile:262144:262144
-    volumes: "{{ capture_mounts + [ '%s:%s:ro' | format(meerkat.data_vol, moloch.suricata.container_dir) ] if meerkat.data_vol is defined else capture_mounts }}"
+    volumes: "{{ capture_mounts + [ '%s:%s:ro' | format(suricata_moloch_shared_vol, moloch.suricata.container_dir) ] if suricata_moloch_shared_vol is defined else capture_mounts }}"
     env:
       # Needed for initializing absent db via entrypoint
       MOLOCH_ELASTICSEARCH: "{{ moloch.capture.elasticsearch[0] }}"
