@@ -173,7 +173,7 @@ suricata_eve_log:
         mode: extra-data
         deployment: reverse
         header: X-Forwarded-For
-      types: "{{ suricata_base_eve_protos_and_alerts }}"
+      types: "{{ suricata_base_eve_protos_and_alerts if enable_suricata_peek_all_logs | mandatory else suricata_base_eve_only_alert }}"
   - eve-log:
       enabled: yes
       filetype: regular
@@ -188,7 +188,7 @@ suricata_eve_log:
         header: X-Forwarded-For
       types: "{{ suricata_base_eve_only_alert }}"
   - eve-log:
-      enabled: yes
+      enabled: "{{ 'yes' if enable_suricata_plain_protocol_logs | mandatory else 'no' }}"
       filetype: regular
       filename: eve.json
       pcap-file: false

@@ -41,6 +41,12 @@ enable_suricata_filebeat: "{{ not elastic_oss_only }}"
 # Custom event shipper through suricata unix socket
 # Stores events in original suricata EVE format and is therefore compatible with suricata community tools
 enable_suricata_peek: true
+# Set false to only enable alert logging via unix socket
+enable_suricata_peek_all_logs: true
+# Set false to disable logging protocols to eve.json
+# Can easily fill disk when true
+# Also disables filebeat protocol collection
+enable_suricata_plain_protocol_logs: true
 # Evebox interface
 # Requires peex uxsock shipper, as it does not support ECS
 # No built-in security, so disable if you do not want to expose it
