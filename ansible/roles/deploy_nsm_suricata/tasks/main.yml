@@ -124,9 +124,9 @@
       - net_admin
       - sys_nice
     volumes:
-      - "{{ host_container_root }}/{{ suricata.name }}/suricata.yaml:/etc/suricata/suricata.yaml:ro"
+      - "{{ host_container_root }}/{{ suricata.name }}/suricata.yaml:/etc/suricata/suricata.yaml:rw"
       - "{{ suricata_volumes.logs }}:{{ suricata_mounts.logs }}:rw"
-      - "{{ suricata_volumes.rules }}:{{ suricata_mounts.rules }}:ro"
+      - "{{ suricata_volumes.rules }}:{{ suricata_mounts.rules }}:rw"
       - "{{ suricata_volumes.sockets }}:{{ suricata_mounts.sockets }}:rw"
       - "{{ suricata_volumes.log_sockets }}:{{ suricata_mounts.log_sockets }}:rw"
     command: "--af-packet -vvv"
