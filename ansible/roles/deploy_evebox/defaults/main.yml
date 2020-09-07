@@ -1,5 +1,5 @@
 ---
-evebox_image: jasonish/evebox:master
+evebox_image: jasonish/evebox:latest
 evebox:
   name: default-evebox
   enable: true
