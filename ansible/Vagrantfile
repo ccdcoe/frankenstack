@@ -6,14 +6,17 @@ CPU=8
 MEM=8196
 VERBOSE=false
 
+$script = <<-SCRIPT
+apt-get update
+apt-get install -y python3 python3-pip
+pip3 install ansible
+SCRIPT
+
 Vagrant.configure(2) do |config|
   config.vm.define NAME do |box|
     box.vm.box = "debian/buster64"
     box.vm.hostname = NAME
-    box.vm.synced_folder ".", "/vagrant", 
-      type: "nfs", 
-      nfs_udp: false, 
-      nfs_version: 4
+    box.vm.synced_folder ".", "/vagrant", type: "sshfs"
     box.vm.provider :virtualbox do |vb, override|
       override.vm.network :private_network, ip: "192.168.34.10"
       vb.customize ["modifyvm", :id, "--memory", MEM]
@@ -24,17 +27,20 @@ Vagrant.configure(2) do |config|
       v.memory = MEM
       v.cpus = CPU
     end
+    config.vm.provision "shell", inline: $script
     config.vm.provision :ansible_local do |ansible|
-      ansible.install = true
+      ansible.install = false
       ansible.install_mode = "pip"
       ansible.playbook = "./play_bootstrap_singlehost.yml"
       ansible.become = true
       ansible.verbose = VERBOSE
+      ansible.extra_vars = { ansible_python_interpreter:"/usr/bin/python3" }
     end
     config.vm.provision :ansible_local do |ansible|
       ansible.playbook = "./play_deploy_singlehost.yml"
       ansible.become = true
       ansible.verbose = VERBOSE
+      ansible.extra_vars = { ansible_python_interpreter:"/usr/bin/python3" }
     end
   end
 end
