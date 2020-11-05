@@ -6,7 +6,7 @@ elastic_beat_setup: "{{ not elastic_oss }}"
 
 # Global version string
 # Make sure to keep it it sync when overriding individual images
-elastic_version: 7.6.1
+elastic_version: 7.9.3
 
 # Individual elastic images
 elasticsearch_image: "docker.elastic.co/elasticsearch/elasticsearch{{ '-oss' if elastic_oss else '' }}:{{ elastic_version }}"
