@@ -2,7 +2,7 @@
 suricata_image: jasonish/suricata
 suricata_update_image: jasonish/suricata
 suricata_custom_shipper_image: markuskont/peek
-suricata_filebeat_shipper_image: "docker.elastic.co/beats/filebeat:{{ elastic_version | default('7.6.1') }}"
+suricata_filebeat_shipper_image: "docker.elastic.co/beats/filebeat:{{ elastic_version | default('7.9.3') }}"
 
 suricata:
   name: default-suricata

@@ -1,6 +1,6 @@
 ---
 zeek_image: blacktop/zeek
-zeek_filebeat_shipper_image: "docker.elastic.co/beats/filebeat:{{ elastic_version | default('7.6.1') }}"
+zeek_filebeat_shipper_image: "docker.elastic.co/beats/filebeat:{{ elastic_version | default('7.9.3') }}"
 
 zeek:
   name: default-zeek
