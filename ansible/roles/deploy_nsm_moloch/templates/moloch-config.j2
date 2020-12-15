@@ -15,7 +15,7 @@ udpTimeout = 30
 icmpTimeout = 10
 maxStreams = 1000000
 maxPackets = 10000
-freeSpaceG = 5%
+freeSpaceG = {{ moloch.free_space_g | default('3%') }}
 viewPort = 8005
 
 geoLite2Country = /data/moloch/etc/GeoLite2-Country.mmdb
@@ -67,7 +67,9 @@ logFileCreation = true
 
 pcapReadMethod=tpacketv3
 
+{% if 'rules_enabled' in moloch and moloch.rules_enabled %}
 rulesFiles=/data/moloch/etc/rules.yml
+{% endif %}
 
 [headers-http-request]
 referer=type:string;count:true;unique:true
@@ -84,38 +86,21 @@ content-type=type:string;count:true
 x-priority=type:integer
 authorization=type:string
 
-{%- if game_zones is defined %}
+{%- if zone_overrides is defined %}
 [override-ips]
-{%- if 'sinet' in game_zones %}
-{%- for item in game_zones.sinet %}
-{{ item.range }}=tag:{{item.tag}};country:{{item.country}};asn:AS0000 {{item.asn}};rir:{{item.rir}}
-{%- endfor %}
-{%- endif %}
-{%- if 'home' in game_zones %}
-{%- for item in game_zones.home %}
+{%- for item in zone_overrides %}
 {{ item.range }}=tag:{{item.tag}};country:{{item.country}};rir:{{item.rir}}
 {%- endfor %}
-{%- endif %}
-{%- if 'bad' in game_zones %}
-{%- for item in game_zones.bad %}
-{{ item.range }}=tag:{{item.tag}};country:{{item.country}};rir:{{item.rir}}
-{%- endfor %}
-{%- endif %}
-{%- if 'other' in game_zones %}
-{%- for item in game_zones.other %}
-{{ item.range }}=tag:{{item.tag}};country:{{item.country}};rir:{{item.rir}}
-{%- endfor %}
-{%- endif %}
 {%- endif %}
 
-{%- if 'custom_fields' in moloch %}
+{%- if 'custom_fields' in moloch and moloch.custom_fields %}
 [custom-fields]
 {%- for field in moloch.custom_fields %}
 {{field.name}}=kind:{{field.kind}};count:false;friendly:{{field.friendly}};db:{{field.name}};help:{{field.help}}
 {%- endfor %}
 {%- endif%}
 
-{%- if 'custom_views' in moloch%}
+{%- if 'custom_views' in moloch and moloch.custom_views %}
 [custom-views]
 {%- for view in moloch.custom_views %}
 {{view.name}}=title:{{view.title}};require:{{view.name}};fields:{{view.fields}}
