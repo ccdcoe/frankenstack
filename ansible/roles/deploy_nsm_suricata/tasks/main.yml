@@ -54,7 +54,7 @@
       dest: disable.conf
   register: suricata_update_config_updated
 
-- name: Deploy suricata-update configs
+- name: Deploy suricata config
   template:
     src: suricata.j2
     dest: "{{ host_container_root }}/{{ suricata.name }}/suricata.yaml"

@@ -235,11 +235,11 @@ suricata_config:
       emergency-established: 100
       emergency-bypassed: 50
   stream:
-    memcap: 64mb
+    memcap: "{{ suricata_memcap | default('128mb') }}"
     checksum-validation: yes      # reject wrong csums
     inline: auto                  # auto will use inline mode in IPS mode, yes or no set it statically
     reassembly:
-      memcap: 256mb
+      memcap: "{{ suricata_reassembly_memcap | default('10mb') }}"
       depth: 1mb                  # reassemble 1mb into a stream
       toserver-chunk-size: 2560
       toclient-chunk-size: 2560
