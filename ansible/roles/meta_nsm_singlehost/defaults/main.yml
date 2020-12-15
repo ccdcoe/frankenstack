@@ -79,6 +79,7 @@ moloch_operator_pass: SUPERDUPERSECRETPASS2
 # Will be put into config file and never has to be entered manually, so make it long and complex
 moloch_secret: SUPERDUPERSECRETPLEASECHANGEME
 
+moloch_rules_enabled: true
 
 # Network interface configured for mirror port
 capture_ifaces: "{{ ansible_interfaces | select('match', '^(ens|eno|eth)') | list }}"

@@ -106,6 +106,7 @@ suricata_peek_shipper:
     index: events-suricata
     hosts:
       - "{{ elastic_external_proxy }}"
+  kafka: "{{ suricata_peek_shipper_kafka | default({}) }}"
 
 suricata_socket_file: suricata-events.socket
 
@@ -153,14 +154,13 @@ suricata_base_eve_events:
       enabled: yes
       extended: no
   - ssh
-  - flow
 
 surcata_base_eve_stats:
   - stats
 
 suricata_base_eve_protos_and_alerts: "{{ suricata_base_eve_only_alert + suricata_base_eve_events }}"
 
-suricata_eve_log:
+suricata_eve_log_base:
   - eve-log:
       enabled: yes
       filetype: unix_stream
@@ -201,6 +201,8 @@ suricata_eve_log:
         header: X-Forwarded-For
       types: "{{ suricata_base_eve_events + surcata_base_eve_stats }}"
 
+suricata_eve_log: "{{ suricata_eve_log_base + suricata_eve_log_extended | default([]) }}"
+
 moloch_wise_config:
   reversedns:
     range: "{{ asset_lookup_nets | default(suricata_home_nets) | join(';') }}"
@@ -208,7 +210,10 @@ moloch_wise_config:
 
 moloch_prefix: "{{ prefix }}-owl"
 moloch:
-  name: "{{ moloch_prefix }}"
+  name: "{{ moloch_prefix | mandatory }}"
+  max_file_size_g: 12
+  free_space_g: 5%
+  rules_enabled: "{{ moloch_rules_enabled | mandatory }}"
   capture:
     elasticsearch: 
     - "{{ elastic_external_proxy }}"
@@ -239,6 +244,8 @@ moloch:
   suricata:
     container_dir: /var/log/suricata
     file: alert.json
+  custom_fields: "{{ moloch_custom_target_fields }}"
+  custom_views: "{{ moloch_custom_views }}"
 
 moloch_users:
   - username: admin
