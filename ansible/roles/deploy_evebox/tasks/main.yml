@@ -15,5 +15,5 @@
     restart_policy: unless-stopped
     networks: 
       - name: "{{ evebox.network }}"
-    command: "-e {{ evebox.elastic }} --index {{ evebox.index }} --elasticsearch-keyword {{ evebox.keyword }} --host 0.0.0.0"
+    command: "-e {{ evebox.elastic }} --index {{ evebox.index }} --host 0.0.0.0"
     published_ports: "{{ evebox.expose if 'expose' in evebox else [] }}"

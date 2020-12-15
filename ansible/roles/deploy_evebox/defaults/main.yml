@@ -6,4 +6,3 @@ evebox:
   elastic: http://elastic:9200
   network: bridge
   index: suricata
-  keyword: keyword
