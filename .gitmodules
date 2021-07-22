@@ -10,3 +10,6 @@
 [submodule "peek"]
 	path = peek
 	url = https://github.com/ccdcoe/go-peek.git
+[submodule "sigma-rule-engine"]
+	path = sigma-rule-engine
+	url = https://github.com/markuskont/go-sigma-rule-engine
